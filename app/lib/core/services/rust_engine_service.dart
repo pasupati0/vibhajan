@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../generated/rust_bridge/api.dart';
+import '../../generated/rust_bridge/bridge_dtos.dart';
 
 final rustEngineServiceProvider = Provider<RustEngineService>((ref) {
   return RustEngineService();

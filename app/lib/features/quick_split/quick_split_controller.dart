@@ -2,7 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 import '../../core/services/rust_engine_service.dart';
 import '../../domain/repositories/repositories.dart';
-import '../../generated/rust_bridge/api.dart';
+import '../../generated/rust_bridge/bridge_dtos.dart';
 
 class QuickSplitState {
   final int enteredTotalPaise;

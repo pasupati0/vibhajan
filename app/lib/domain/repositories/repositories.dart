@@ -1,4 +1,4 @@
-import '../../generated/rust_bridge/api.dart';
+import '../../generated/rust_bridge/bridge_dtos.dart';
 
 class ParticipantEntity {
   final String id;
