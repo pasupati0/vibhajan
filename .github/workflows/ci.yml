@@ -27,12 +27,10 @@ jobs:
 
       - name: Fetch Dart Dependencies & Generate Rust FFI Bindings
         run: |
-          cd app && flutter pub get && cd ..
+          (cd app && flutter pub get)
           cargo install flutter_rust_bridge_codegen --version 2.4.0 --locked
           mkdir -p app/android/app/src/main/jniLibs app/lib/generated/rust_bridge
-          cd rust
-          flutter_rust_bridge_codegen generate --config-file crates/split_ffi/flutter_rust_bridge.yaml
-          cargo test --workspace
+          (cd rust && flutter_rust_bridge_codegen generate --config-file crates/split_ffi/flutter_rust_bridge.yaml && cargo test --workspace)
 
       - name: Build Android Native Libraries via cargo-ndk
         working-directory: ./rust
