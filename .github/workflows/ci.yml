@@ -26,11 +26,12 @@ jobs:
           flutter-version: "3.24.0"
           channel: "stable"
 
-      - name: Generate flutter_rust_bridge Bindings & Run Rust Tests
-        working-directory: ./rust
+      - name: Fetch Dart Dependencies & Generate Rust FFI Bindings
         run: |
+          cd app && flutter pub get && cd ..
           cargo install flutter_rust_bridge_codegen --version 2.4.0 --locked
-          mkdir -p ../app/android/app/src/main/jniLibs ../app/lib/generated/rust_bridge
+          mkdir -p app/android/app/src/main/jniLibs app/lib/generated/rust_bridge
+          cd rust
           flutter_rust_bridge_codegen generate --config-file crates/split_ffi/flutter_rust_bridge.yaml
           cargo test --workspace
 
