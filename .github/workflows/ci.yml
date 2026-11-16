@@ -23,7 +23,6 @@ jobs:
 
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: "3.24.0"
           channel: "stable"
 
       - name: Fetch Dart Dependencies & Generate Rust FFI Bindings
@@ -48,8 +47,7 @@ jobs:
         run: |
           flutter create --platforms=android --org in.baato --project-name baato_split .
           rm -f test/widget_test.dart
-          [ -f android/settings.gradle ] && sed -i 's/id "org.jetbrains.kotlin.android" version "[^"]*"/id "org.jetbrains.kotlin.android" version "1.9.24"/g' android/settings.gradle
-          [ -f android/settings.gradle.kts ] && sed -i 's/id("org.jetbrains.kotlin.android") version "[^"]*"/id("org.jetbrains.kotlin.android") version "1.9.24"/g' android/settings.gradle.kts
+          sed -i 's|</application>|    <meta-data android:name="com.google.android.gms.ads.APPLICATION_ID" android:value="ca-app-pub-3940256099942544~3347511713"/>\n    </application>|' android/app/src/main/AndroidManifest.xml
           flutter pub get
           flutter test
           flutter build apk --release
