@@ -1,5 +1,5 @@
 use flutter_rust_bridge::frb;
-use split_domain::{
+pub use split_domain::{
      BasisPoints, ExpenseBalanceSummary, ExpenseRecordInput, GroupBalanceSummary, GstBreakdown,
     GstCalculationInput, GstMode, OutstandingComputation, Paise, ParticipantShareInput,
     PayerContribution, SettlementRecord, SplitResult, TaxStructure,
