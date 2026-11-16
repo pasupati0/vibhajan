@@ -217,7 +217,6 @@ pub fn calculate_group_balances(
         });
     }
 
-    let _ = net; // suppress unused warning if only self exists
     let net_position = total_receivables - total_payables;
 
     Ok(GroupBalanceSummary {
