@@ -30,7 +30,7 @@ jobs:
         working-directory: ./rust
         run: |
           cargo install flutter_rust_bridge_codegen --version 2.4.0 --locked
-          mkdir -p ../app/android/app/src/main/jniLibs
+          mkdir -p ../app/android/app/src/main/jniLibs ../app/lib/generated/rust_bridge
           flutter_rust_bridge_codegen generate --config-file crates/split_ffi/flutter_rust_bridge.yaml
           cargo test --workspace
 
