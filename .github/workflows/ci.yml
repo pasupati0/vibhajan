@@ -1,0 +1,31 @@
+name: Baato Android & Rust FFI CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  verify-rust-and-flutter:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android,armv7-linux-androideabi,x86_64-linux-android
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.24.0"
+          channel: "stable"
+      - name: Run Rust Domain Unit Tests
+        working-directory: ./rust
+        run: cargo test --workspace --locked
+      - name: Build Android Native Libraries via cargo-ndk
+        run: chmod +x ./scripts/build_android_rust.sh && ./scripts/build_android_rust.sh
+      - name: Run Flutter Analyze & Acceptance Tests
+        working-directory: ./app
+        run: |
+          flutter pub get
+          flutter test
+          flutter build apk --release
+          flutter build appbundle --release
