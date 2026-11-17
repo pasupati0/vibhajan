@@ -5,6 +5,14 @@ on:
     branches: [main]
   pull_request:
   workflow_dispatch:
+  schedule:
+    - cron: "0 6 * * 1"
+
+env:
+  FLUTTER_VERSION: "3.24.5"
+  NDK_VERSION: "27.0.12077973"
+  ANDROID_SDK_PLATFORM: "36"
+  ANDROID_BUILD_TOOLS: "36.0.0"
 
 jobs:
   verify-rust-and-flutter:
@@ -12,9 +20,23 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Set up Android SDK & NDK
+        run: |
+          yes | "${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null
+          "${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" \
+            "platforms;android-${ANDROID_SDK_PLATFORM}" \
+            "build-tools;${ANDROID_BUILD_TOOLS}" \
+            "ndk;${NDK_VERSION}"
+          echo "ANDROID_NDK_HOME=${ANDROID_HOME}/ndk/${NDK_VERSION}" >> "$GITHUB_ENV"
+          echo "ANDROID_NDK_ROOT=${ANDROID_HOME}/ndk/${NDK_VERSION}" >> "$GITHUB_ENV"
+
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: aarch64-linux-android,armv7-linux-androideabi,x86_64-linux-android
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "rust -> target"
 
       - uses: actions/setup-java@v4
         with:
@@ -24,34 +46,60 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           channel: "stable"
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
 
-      - name: Fetch Dart Dependencies & Generate Rust FFI Bindings
-        run: |
-          (cd app && flutter pub get)
-          cargo install flutter_rust_bridge_codegen --version 2.4.0 --locked
-          mkdir -p app/android/app/src/main/jniLibs app/lib/generated/rust_bridge
-          (cd rust && flutter_rust_bridge_codegen generate --config-file crates/split_ffi/flutter_rust_bridge.yaml && cargo test --workspace)
+      - name: Install cargo-ndk & codegen
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-ndk,flutter_rust_bridge_codegen@2.4.0
 
-      - name: Build Android Native Libraries via cargo-ndk
+      - name: Fetch Dart deps
+        working-directory: ./app
+        run: flutter pub get
+
+      - name: Generate FFI bindings + Rust tests
         working-directory: ./rust
         run: |
-          cargo install cargo-ndk --locked
+          flutter_rust_bridge_codegen generate --config-file crates/split_ffi/flutter_rust_bridge.yaml
+          cargo test --workspace
+
+      - name: Build Android native libs
+        working-directory: ./rust
+        run: |
           cargo ndk -t arm64-v8a -t armeabi-v7a \
             -o ../app/android/app/src/main/jniLibs \
             build --release -p split_ffi
 
-      - name: Scaffold Android & Build APK
+      - name: Ensure AdMob test App ID in manifest
         working-directory: ./app
         run: |
-          flutter create --platforms=android --org in.baato --project-name baato_split .
-          rm -f test/widget_test.dart
-          sed -i 's|</application>|    <meta-data android:name="com.google.android.gms.ads.APPLICATION_ID" android:value="ca-app-pub-3940256099942544~3347511713"/>\n    </application>|' android/app/src/main/AndroidManifest.xml
-          flutter pub get
-          flutter test
-          flutter build apk --release
+          MANIFEST=android/app/src/main/AndroidManifest.xml
+          if ! grep -q "com.google.android.gms.ads.APPLICATION_ID" "$MANIFEST"; then
+            sed -i 's|</application>|    <meta-data android:name="com.google.android.gms.ads.APPLICATION_ID" android:value="ca-app-pub-3940256099942544~3347511713"/>\n    </application>|' "$MANIFEST"
+          fi
 
-      - name: Upload Downloadable APK
+      - name: Flutter test
+        working-directory: ./app
+        run: |
+          if [ -d test ] && [ -n "$(ls -A test 2>/dev/null)" ]; then
+            flutter test
+          else
+            echo "::warning::No Flutter tests found — skipping."
+          fi
+
+      - name: Build release APK
+        working-directory: ./app
+        run: flutter build apk --release
+
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: baato-split-android-apk
           path: app/build/app/outputs/flutter-apk/app-release.apk
+          if-no-files-found: error
+
+      - name: gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
