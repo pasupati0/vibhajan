@@ -1,0 +1,17 @@
+{
+  "name": "Vibhajan",
+  "short_name": "Vibhajan",
+  "description": "Split bills, not friendships. India-first expense splitter.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#F97316",
+  "lang": "en-IN",
+  "icons": [
+    {
+      "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgcng9IjIyIiBmaWxsPSIjRjk3MzE2Ii8+PC9zdmc+",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

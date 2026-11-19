@@ -1,0 +1,53 @@
+openapi: 3.1.0
+info:
+  title: Vibhajan API
+  version: 0.1.0
+  description: Contract for the future Rust/Axum/PostgreSQL backend. Frontend is local-first; this defines the sync surface.
+servers:
+  - url: https://{host}/api/v1
+    variables:
+      host: { default: vibhajan.local }
+security:
+  - cookieAuth: []
+paths:
+  /auth/session:
+    get: { summary: Session info, responses: { '200': { description: OK } } }
+    post: { summary: Log in (HttpOnly cookie set), responses: { '204': { description: OK } } }
+  /users/me:
+    get: { summary: Current user, responses: { '200': { description: OK } } }
+    patch: { summary: Update profile, responses: { '200': { description: OK } } }
+  /groups:
+    get: { summary: List groups, responses: { '200': { description: OK } } }
+    post: { summary: Create group, responses: { '201': { description: Created } } }
+  /groups/{id}:
+    get: { summary: Get group, responses: { '200': { description: OK } } }
+    patch: { summary: Update, responses: { '200': { description: OK } } }
+    delete: { summary: Archive, responses: { '204': { description: OK } } }
+  /expenses:
+    get: { summary: List expenses, responses: { '200': { description: OK } } }
+    post: { summary: Create expense, responses: { '201': { description: Created } } }
+  /expenses/{id}:
+    get: { summary: Get expense, responses: { '200': { description: OK } } }
+    patch: { summary: Update, responses: { '200': { description: OK } } }
+    delete: { summary: Delete, responses: { '204': { description: OK } } }
+  /expenses/{id}/participants:
+    get: { summary: List participants, responses: { '200': { description: OK } } }
+  /expenses/{id}/payments:
+    get: { summary: List payments, responses: { '200': { description: OK } } }
+    post: { summary: Record payment, responses: { '201': { description: Created } } }
+  /settlements:
+    post: { summary: Record settlement (pairwise), responses: { '201': { description: Created } } }
+  /balances:
+    get: { summary: Name-wise balances, responses: { '200': { description: OK } } }
+  /attachments:
+    post: { summary: Upload bill (multipart), responses: { '201': { description: Created } } }
+  /attachments/{id}:
+    get: { summary: Fetch (signed URL), responses: { '302': { description: Redirect } } }
+  /notifications:
+    get: { summary: List notifications, responses: { '200': { description: OK } } }
+  /preferences:
+    get: { summary: Get prefs, responses: { '200': { description: OK } } }
+    patch: { summary: Update prefs, responses: { '200': { description: OK } } }
+components:
+  securitySchemes:
+    cookieAuth: { type: apiKey, in: cookie, name: session }
