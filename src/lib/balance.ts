@@ -1,3 +1,4 @@
+// src/lib/balance.ts
 import { Paise } from './money';
 import { Expense, Payment } from '../db/types';
 
@@ -6,13 +7,33 @@ export type PairwiseMap = Map<string, Paise>;
 
 const key = (from: string, to: string) => `${from}|${to}`;
 
+/**
+ * REDUCE an existing debt (used for settlements/payments).
+ * If `from` owes `to` and pays `amount`, this reduces the debt.
+ * If the payment exceeds the debt, a reverse debt is created.
+ */
 function reducePair(p: PairwiseMap, from: string, to: string, amount: Paise) {
-  // reduce `from`'s debt to `to` by amount; overflow becomes reverse debt
   if (amount <= 0 || from === to) return;
   const k1 = key(from, to);
   const k2 = key(to, from);
   const curFromOwesTo = (p.get(k1) ?? 0) - (p.get(k2) ?? 0);
   const next = curFromOwesTo - amount;
+  if (next > 0) { p.set(k1, next); p.delete(k2); }
+  else if (next < 0) { p.set(k2, -next); p.delete(k1); }
+  else { p.delete(k1); p.delete(k2); }
+}
+
+/**
+ * ADD a debt (used when creating expenses).
+ * If `from` owes `to` an additional `amount`, this increases the debt.
+ * If a reverse debt exists, it first cancels out.
+ */
+function addPair(p: PairwiseMap, from: string, to: string, amount: Paise) {
+  if (amount <= 0 || from === to) return;
+  const k1 = key(from, to);
+  const k2 = key(to, from);
+  const curFromOwesTo = (p.get(k1) ?? 0) - (p.get(k2) ?? 0);
+  const next = curFromOwesTo + amount;
   if (next > 0) { p.set(k1, next); p.delete(k2); }
   else if (next < 0) { p.set(k2, -next); p.delete(k1); }
   else { p.delete(k1); p.delete(k2); }
@@ -36,7 +57,8 @@ export function pairwiseForExpense(e: Expense): PairwiseMap {
   while (i < creditors.length && j < debtors.length) {
     const c = creditors[i], d = debtors[j];
     const amt = Math.min(c.amt, d.amt);
-    reducePair(out, d.id, c.id, amt);
+    // `d` owes `c` `amt` — ADD this debt with correct keys
+    addPair(out, d.id, c.id, amt);
     c.amt -= amt; d.amt -= amt;
     if (c.amt === 0) i++;
     if (d.amt === 0) j++;
@@ -52,11 +74,13 @@ export function computePairwise(expenses: Expense[], payments: Payment[]): Pairw
     const local = pairwiseForExpense(e);
     for (const [k, v] of local) {
       const [from, to] = k.split('|');
-      reducePair(agg, from, to, v);
+      // from owes to v — ADD this debt to aggregate
+      addPair(agg, from, to, v);
     }
   }
   for (const p of payments) {
     if (p.deletedAt) continue;
+    // A payment from p.fromId to p.toId REDUCES the debt
     reducePair(agg, p.fromId, p.toId, p.amount);
   }
   return agg;
@@ -83,8 +107,8 @@ export interface ParticipantShareStatus {
   participantId: string;
   name: string;
   allocation: Paise;
-  contributed: Paise;    // original payment
-  settledIn: Paise;      // settlements this participant paid toward this expense
+  contributed: Paise;
+  settledIn: Paise;
   outstanding: Paise;
   status: PaymentStatus;
 }

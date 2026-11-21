@@ -2,9 +2,11 @@
 import { useState, useMemo } from 'react';
 import { Card, Field} from '../../components/ui';
 import { formatINR } from '../../lib/format';
-import { rupeesToPaise} from '../../lib/money';
+import { rupeesToPaise } from '../../lib/money';
+import { useI18n } from '../../i18n/I18nProvider';
 
 export default function EmiCalculator() {
+  const { t } = useI18n();
   const [principalStr, setPrincipalStr] = useState('5000000');
   const [rateStr, setRateStr] = useState('8.5');
   const [tenureYears, setTenureYears] = useState(20);
@@ -30,18 +32,18 @@ export default function EmiCalculator() {
 
   return (
     <div className="fade-in">
-      <h1>EMI Calculator</h1>
+      <h1>{t('tool.emi')}</h1>
       <p className="muted">Calculate your monthly loan instalment.</p>
 
       <Card className="mt-4">
         <div className="grid-2">
-          <Field label="Loan Amount (₹)">
+          <Field label={t('emi.amount')}>
             <input className="input" type="number" value={principalStr} onChange={e => setPrincipalStr(e.target.value)} />
           </Field>
-          <Field label="Interest Rate (% p.a.)">
+          <Field label={t('emi.rate')}>
             <input className="input" type="number" step="0.1" value={rateStr} onChange={e => setRateStr(e.target.value)} />
           </Field>
-          <Field label={`Tenure (Years): ${tenureYears}`}>
+          <Field label={`${t('emi.tenure')}: ${tenureYears}`}>
             <input className="input" type="range" min="1" max="30" value={tenureYears} onChange={e => setTenureYears(Number(e.target.value))} />
           </Field>
         </div>
@@ -49,18 +51,18 @@ export default function EmiCalculator() {
 
       {result && (
         <Card className="mt-3">
-          <h3>Results</h3>
+          <h3>{t('common.results')}</h3>
           <div className="grid-2 mt-2">
             <div>
-              <div className="muted">Monthly EMI</div>
+              <div className="muted">{t('emi.monthly')}</div>
               <div style={{ fontSize: '1.8rem', fontWeight: 800 }} className="mono">{formatINR(result.emi)}</div>
             </div>
             <div>
-              <div className="muted">Total Interest</div>
+              <div className="muted">{t('emi.totalInterest')}</div>
               <div style={{ fontSize: '1.2rem', fontWeight: 700 }} className="mono">{formatINR(result.totalInterest)}</div>
             </div>
             <div>
-              <div className="muted">Total Payment</div>
+              <div className="muted">{t('emi.totalPayment')}</div>
               <div style={{ fontSize: '1.2rem', fontWeight: 700 }} className="mono">{formatINR(result.totalPayment)}</div>
             </div>
           </div>

@@ -46,7 +46,7 @@ export default function Landing() {
             className="card tool-button"
             aria-label={`Open ${tool.label}: ${tool.desc}`}
           >
-            <span style={{ fontSize: '2.5rem', lineHeight: 1, marginBottom: 8 }}>
+            <span aria-hidden="true" style={{ fontSize: '2.5rem', lineHeight: 1, marginBottom: 8 }}>
               {tool.icon}
             </span>
             <h2 style={{ fontSize: '1rem', fontWeight: 700, margin: 0 }}>

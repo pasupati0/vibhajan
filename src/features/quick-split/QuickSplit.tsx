@@ -58,9 +58,13 @@ export default function QuickSplit() {
 
   const gst = useMemo(() => {
     if (total <= 0) return { total: 0, base: 0, gst: 0, rate: 0 };
-    return gstMode === 'inclusive'
-      ? { total, base: total, gst: 0, rate: 0 }
-      : computeGstExclusive(total, gstRate);
+    if (gstMode === 'inclusive') {
+      // Calculate actual base and GST from the inclusive total
+      const rate = gstRate || 0; // fallback to 0 if not provided
+      const base = Math.round((total * 100) / (100 + rate));
+      return { total, base, gst: total - base, rate };
+    }
+    return computeGstExclusive(total, gstRate);
   }, [total, gstRate, gstMode]);
 
   const allocations = useMemo<Paise[]>(() => {
