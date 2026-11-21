@@ -1,20 +1,24 @@
+// src/routes.tsx
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { lazy, Suspense } from 'react';
 
-const QuickSplit   = lazy(() => import('./features/quick-split/QuickSplit'));
-const Balances     = lazy(() => import('./features/balances/Balances'));
-const Groups       = lazy(() => import('./features/groups/Groups'));
-const History      = lazy(() => import('./features/history/History'));
-const ExpenseDetail = lazy(() => import('./features/expense/ExpenseDetail'));
-const Settings     = lazy(() => import('./features/settings/Settings'));
-
-function SuspenseFallback() {
-  return <div className="muted" style={{ padding: 24 }}>Loading…</div>;
-}
+// Lazy load all tools
+const Landing = lazy(() => import('./features/landing/Landing'));
+const QuickSplit = lazy(() => import('./features/quick-split/QuickSplit'));
+const EmiCalculator = lazy(() => import('./features/emi/EmiCalculator'));
+const GstCalculator = lazy(() => import('./features/gst/GstCalculator'));
+const SipCalculator = lazy(() => import('./features/sip/SipCalculator'));
+const IncomeTaxCalculator = lazy(() => import('./features/income-tax/IncomeTaxCalculator'));
+const CurrencyConverter = lazy(() => import('./features/currency/CurrencyConverter'));
+const NriTaxCalculator = lazy(() => import('./features/nri-tax/NriTaxCalculator'));
+const NriDayTracker = lazy(() => import('./features/nri-days/NriDayTracker'));
+const HraCalculator = lazy(() => import('./features/hra/HraCalculator'));
+const TdsCalculator = lazy(() => import('./features/tds/TdsCalculator'));
+const Settings = lazy(() => import('./features/settings/Settings'));
 
 function L({ children }: { children: React.ReactNode }) {
-  return <Suspense fallback={<SuspenseFallback />}>{children}</Suspense>;
+  return <Suspense fallback={<div style={{ padding: 20 }}>Loading…</div>}>{children}</Suspense>;
 }
 
 export const router = createBrowserRouter([
@@ -22,11 +26,17 @@ export const router = createBrowserRouter([
     path: '/',
     element: <Layout />,
     children: [
-      { index: true, element: <L><QuickSplit /></L> },
-      { path: 'balances', element: <L><Balances /></L> },
-      { path: 'groups', element: <L><Groups /></L> },
-      { path: 'history', element: <L><History /></L> },
-      { path: 'expense/:id', element: <L><ExpenseDetail /></L> },
+      { index: true, element: <L><Landing /></L> },
+      { path: 'tool/quick-split', element: <L><QuickSplit /></L> },
+      { path: 'tool/emi', element: <L><EmiCalculator /></L> },
+      { path: 'tool/gst', element: <L><GstCalculator /></L> },
+      { path: 'tool/sip', element: <L><SipCalculator /></L> },
+      { path: 'tool/income-tax', element: <L><IncomeTaxCalculator /></L> },
+      { path: 'tool/currency', element: <L><CurrencyConverter /></L> },
+      { path: 'tool/nri-tax', element: <L><NriTaxCalculator /></L> },
+      { path: 'tool/nri-days', element: <L><NriDayTracker /></L> },
+      { path: 'tool/hra', element: <L><HraCalculator /></L> },
+      { path: 'tool/tds', element: <L><TdsCalculator /></L> },
       { path: 'settings', element: <L><Settings /></L> },
       { path: '*', element: <Navigate to="/" replace /> },
     ],

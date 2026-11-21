@@ -1,0 +1,1 @@
+const n=new Intl.NumberFormat("en-IN",{style:"currency",currency:"INR",minimumFractionDigits:2,maximumFractionDigits:2});function r(t){return n.format(t/100)}function i(){return new Date().toISOString().slice(0,10)}export{r as f,i as t};
