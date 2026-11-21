@@ -55,17 +55,46 @@ export default function CurrencyConverter() {
     return () => { cancelled = true; };
   }, []);
 
-  // Fetch latest rate for the selected target currency
+  // Fetch latest rate for the selected target currency (with caching)
   const fetchRate = useCallback(async (target: string) => {
     setLoading(true);
     setError(null);
     try {
+      // 1. Check Cache
+      const cached = localStorage.getItem(`rate-INR-${target}`);
+      if (cached) {
+        try {
+          const { rate: cachedRate, date: cachedDate } = JSON.parse(cached);
+          const today = new Date().toISOString().slice(0, 10);
+          // Use cache if it's from today
+          if (cachedDate === today) {
+            setRate(cachedRate);
+            setLastUpdated(cachedDate);
+            setLoading(false);
+            return;
+          }
+        } catch (e) {
+          // Ignore JSON parse errors and proceed to fetch
+          console.warn('Failed to parse cached rate', e);
+        }
+      }
+
+      // 2. Fetch from API if cache is stale or empty
       const res = await fetch(`https://api.frankfurter.dev/v1/latest?base=INR&symbols=${target}`);
       if (!res.ok) throw new Error('Failed to fetch exchange rate');
       const data = await res.json();
+      
       if (data?.rates?.[target]) {
-        setRate(data.rates[target]);
-        setLastUpdated(data.date);
+        const newRate = data.rates[target];
+        const newDate = data.date;
+        setRate(newRate);
+        setLastUpdated(newDate);
+        
+        // 3. Save to Cache
+        localStorage.setItem(
+          `rate-INR-${target}`, 
+          JSON.stringify({ rate: newRate, date: newDate })
+        );
       } else {
         throw new Error('Rate not available for selected currency');
       }
