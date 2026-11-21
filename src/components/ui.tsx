@@ -1,7 +1,7 @@
 import React from 'react';
 
-export function Card({ children, className = '' }: { children: React.ReactNode; className?: string }) {
-  return <div className={`card ${className}`}>{children}</div>;
+export function Card({ children, className = '', ...rest }: React.HTMLAttributes<HTMLDivElement>) {
+  return <div className={`card ${className}`} {...rest}>{children}</div>;
 }
 
 export function Button(props: React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'primary' | 'ghost' | 'danger'; block?: boolean; size?: 'sm' }) {
