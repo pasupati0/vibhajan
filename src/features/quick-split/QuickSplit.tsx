@@ -1,17 +1,16 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+// src/features/quick-split/QuickSplit.tsx
+import { useEffect, useMemo, useState } from 'react';
 import { useI18n } from '../../i18n/I18nProvider';
 import { useData } from '../../context/DataProvider';
 import { Button, Card, Field } from '../../components/ui';
-import { Paise, rupeesToPaise, paiseToRupeesString } from '../../lib/money';
-import { GstMode, computeGstExclusive } from '../../lib/gst';
+import { Paise, rupeesToPaise } from '../../lib/money';
 import { allocateEqual, allocateByPercent, validateCustom } from '../../lib/allocation';
-import { formatINR, todayISO } from '../../lib/format';
+import { formatINR, todayISO, formatDate } from '../../lib/format';
 import { uuid, ME_ID } from '../../lib/id';
 import { Expense } from '../../db/types';
 
 type Mode = 'equal' | 'percent' | 'custom';
-interface Row { id: string; name: string; pct: number; custom: Paise; }
+interface Row { id: string; name: string; pct: number; custom: string; }
 
 interface PreviewDebt {
   debtorId: string;
@@ -29,63 +28,91 @@ interface PreviewData {
 
 export default function QuickSplit() {
   const { t } = useI18n();
-  const { profile, groups, saveExpense } = useData();
-  const navigate = useNavigate();
+  const { profile, groups, saveExpense, expenses, deleteExpense } = useData();
 
+  // Form State
   const [totalStr, setTotalStr] = useState('');
-  const [gstRate, setGstRate] = useState(0);
-  const [gstMode, setGstMode] = useState<GstMode>('inclusive');
-  const [rows, setRows] = useState<Row[]>([{ id: ME_ID, name: profile.name || 'You', pct: 100, custom: 0 }]);
+  const [gstRateStr, setGstRateStr] = useState('0');
+  // Updated custom to string to allow smooth typing (e.g. ".14")
+  const [rows, setRows] = useState<Row[]>([{ id: ME_ID, name: profile.name || 'You', pct: 100, custom: '0' }]);
   const [mode, setMode] = useState<Mode>('equal');
   const [paidBy, setPaidBy] = useState<string>(ME_ID);
 
+  // UI State
   const [showPreview, setShowPreview] = useState(false);
   const [previewData, setPreviewData] = useState<PreviewData | null>(null);
+  const [isHistoricalView, setIsHistoricalView] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showHistory, setShowHistory] = useState(false);
 
   useEffect(() => {
     setRows(r => {
       const has = r.find(x => x.id === ME_ID);
       if (has) return r.map(x => (x.id === ME_ID ? { ...x, name: profile.name || 'You' } : x));
-      return [{ id: ME_ID, name: profile.name || 'You', pct: 100, custom: 0 }, ...r];
+      return [{ id: ME_ID, name: profile.name || 'You', pct: 100, custom: '0' }, ...r];
     });
   }, [profile.name]);
 
+  // Calculations
   const total = useMemo<Paise>(() => {
     try { return rupeesToPaise(totalStr); } catch { return 0; }
   }, [totalStr]);
 
-  const gst = useMemo(() => {
-    if (total <= 0) return { total: 0, base: 0, gst: 0, rate: 0 };
-    if (gstMode === 'inclusive') {
-      // Calculate actual base and GST from the inclusive total
-      const rate = gstRate || 0; // fallback to 0 if not provided
-      const base = Math.round((total * 100) / (100 + rate));
-      return { total, base, gst: total - base, rate };
+  const gstRate = useMemo(() => Math.max(0, Number(gstRateStr) || 0), [gstRateStr]);
+
+  const { baseAmount, gstAmount, gstShares } = useMemo(() => {
+    if (total <= 0 || rows.length === 0) {
+      return { baseAmount: 0, gstAmount: 0, gstShares: [] };
     }
-    return computeGstExclusive(total, gstRate);
-  }, [total, gstRate, gstMode]);
+    // Standard legal extraction: Total - (Total / 1.rate)
+    const gst = Math.round(total - (total / (1 + (gstRate / 100))));
+    const base = total - gst;
+    // Divide GST equally among all participants with exact remainder distribution
+    const shares = allocateEqual(gst, rows.length);
+    return { baseAmount: base, gstAmount: gst, gstShares: shares };
+  }, [total, gstRate, rows.length]);
+
+  const parsedCustoms = useMemo(() => {
+    return rows.map(r => {
+      try { return rupeesToPaise(r.custom); } catch { return 0; }
+    });
+  }, [rows]);
 
   const allocations = useMemo<Paise[]>(() => {
     if (total <= 0 || rows.length === 0) return rows.map(() => 0);
     try {
-      if (mode === 'equal') return allocateEqual(total, rows.length);
-      if (mode === 'percent') return allocateByPercent(total, rows.map(r => r.pct || 0));
-      return rows.map(r => r.custom);
+      let baseAllocations: Paise[] = [];
+      if (mode === 'equal') {
+        return allocateEqual(total, rows.length);
+      } 
+      if (mode === 'percent') {
+        baseAllocations = allocateByPercent(baseAmount, rows.map(r => r.pct || 0));
+      } else {
+        baseAllocations = parsedCustoms;
+      }
+      return baseAllocations.map((a, i) => a + (gstShares[i] || 0));
     } catch { return rows.map(() => 0); }
-  }, [total, mode, rows]);
+  }, [total, baseAmount, mode, rows, gstShares, parsedCustoms]);
 
   const allocatedSum = allocations.reduce((a, b) => a + b, 0);
   const remaining = total - allocatedSum;
-  const customOk = mode !== 'custom' || validateCustom(total, allocations).ok;
+  const customOk = mode !== 'custom' || validateCustom(baseAmount, parsedCustoms).ok;
   const pctSum = rows.reduce((s, r) => s + (r.pct || 0), 0);
   const pctOk = mode !== 'percent' || Math.abs(pctSum - 100) < 0.001;
 
-  const canSave = total > 0 && rows.length >= 1 && rows.every(r => r.name.trim()) && customOk && pctOk && paidBy.length > 0 && remaining === 0;
+  const canSave =
+    total > 0 &&
+    rows.length >= 1 &&
+    rows.every(r => r.name.trim()) &&
+    customOk &&
+    pctOk &&
+    paidBy.length > 0 &&
+    allocations.every(a => a >= 0);
 
+  // Handlers
   function addRow(name = '') {
-    setRows(r => [...r, { id: uuid(), name, pct: 0, custom: 0 }]);
+    setRows(r => [...r, { id: uuid(), name, pct: 0, custom: '0' }]);
   }
   function updateRow(id: string, patch: Partial<Row>) {
     setRows(r => r.map(x => (x.id === id ? { ...x, ...patch } : x)));
@@ -99,13 +126,33 @@ export default function QuickSplit() {
   function handleLoadGroup(e: React.ChangeEvent<HTMLSelectElement>) {
     const g = groups.find(x => x.id === e.target.value);
     if (!g) return;
-    const newRows = g.members.map(m => ({ id: m.id, name: m.name, pct: 0, custom: 0 }));
+    const newRows = g.members.map(m => ({ id: m.id, name: m.name, pct: 0, custom: '0' }));
     if (!newRows.find(r => r.id === ME_ID)) {
-      newRows.unshift({ id: ME_ID, name: profile.name || 'You', pct: 0, custom: 0 });
+      newRows.unshift({ id: ME_ID, name: profile.name || 'You', pct: 0, custom: '0' });
     }
     const pct = 100 / newRows.length;
     setRows(newRows.map(r => ({ ...r, pct })));
   }
+
+  const buildPreviewData = (exp: Expense): PreviewData => {
+    const payerId = exp.payers[0]?.participantId || '';
+    const payerName = exp.participants.find(p => p.id === payerId)?.name || 'Someone';
+    const debts = exp.allocations
+      .filter(a => a.participantId !== payerId && a.amount > 0)
+      .map(a => ({
+        debtorId: a.participantId,
+        debtorName: exp.participants.find(p => p.id === a.participantId)?.name || 'Unknown',
+        amount: a.amount
+      }));
+
+    return {
+      id: exp.id,
+      total: exp.total,
+      payerId,
+      payerName: payerId === ME_ID ? 'You' : payerName,
+      debts,
+    };
+  };
 
   async function handleSplit() {
     if (!canSave || saving) return;
@@ -117,36 +164,22 @@ export default function QuickSplit() {
         description: 'Quick Split',
         category: 'other',
         date: todayISO(),
-        total: gst.total,
-        gstRate: 0,
+        total: total,
+        gstRate: gstRate,
         gstMode: 'inclusive',
-        gstBase: gst.base,
-        gstAmount: 0,
+        gstBase: baseAmount,
+        gstAmount: gstAmount,
         notes: '',
         participants: rows.map(r => ({ id: r.id, name: r.name.trim() })),
-        payers: [{ participantId: paidBy, amount: gst.total }],
+        payers: [{ participantId: paidBy, amount: total }],
         allocations: rows.map((r, i) => ({ participantId: r.id, amount: allocations[i] })),
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
       await saveExpense(expense);
 
-      const payerName = rows.find(r => r.id === paidBy)?.name || 'Someone';
-      const debts: PreviewDebt[] = expense.allocations
-        .filter(a => a.participantId !== paidBy && a.amount > 0)
-        .map(a => ({
-          debtorId: a.participantId,
-          debtorName: rows.find(r => r.id === a.participantId)?.name || 'Unknown',
-          amount: a.amount
-        }));
-
-      setPreviewData({
-        id: expense.id,
-        total: expense.total,
-        payerId: paidBy,
-        payerName: paidBy === ME_ID ? 'You' : payerName,
-        debts,
-      });
+      setPreviewData(buildPreviewData(expense));
+      setIsHistoricalView(false);
       setShowPreview(true);
     } catch (e: any) {
       setError(e?.message ?? 'Save failed');
@@ -155,14 +188,51 @@ export default function QuickSplit() {
     }
   }
 
+  function resetForm() {
+    setTotalStr('');
+    setGstRateStr('0');
+    setRows([{ id: ME_ID, name: profile.name || 'You', pct: 100, custom: '0' }]);
+    setMode('equal');
+    setPaidBy(ME_ID);
+  }
+
+  function handleDone() {
+    setShowPreview(false);
+    if (!isHistoricalView) {
+      resetForm();
+    }
+    setPreviewData(null);
+  }
+
+  function openHistoricalPreview(expense: Expense) {
+    setPreviewData(buildPreviewData(expense));
+    setIsHistoricalView(true);
+    setShowPreview(true);
+  }
+
+  async function clearAllHistory() {
+    if (!confirm('Clear all Quick Split history? This cannot be undone.')) return;
+    for (const s of pastSplits) {
+      await deleteExpense(s.id);
+    }
+  }
+
+  const pastSplits = expenses.filter(e => e.description === 'Quick Split').sort((a, b) => b.date.localeCompare(a.date));
+
   return (
     <div className="fade-in">
-      <h1>{t('qs.title')}</h1>
+      <div className="row" style={{ justifyContent: 'space-between' }}>
+        <h1>{t('tool.quickSplit')}</h1>
+        <Button size="sm" onClick={() => setShowHistory(v => !v)}>
+          {showHistory ? 'Hide' : 'Show'} History
+        </Button>
+      </div>
       <p className="muted">{t('qs.subtitle')}</p>
 
       <Card className="mt-4">
-        <div className="grid-2">
-          <Field label={gstMode === 'inclusive' ? t('qs.totalBill') : t('qs.totalBillExcl')}>
+        {/* Added alignItems: 'start' to fix input height mismatch */}
+        <div className="grid-2" style={{ alignItems: 'start' }}>
+          <Field label={t('qs.totalBill')}>
             <input
               className="input"
               inputMode="decimal"
@@ -171,28 +241,25 @@ export default function QuickSplit() {
               onChange={e => setTotalStr(e.target.value)}
             />
           </Field>
-          <div className="row" style={{ alignItems: 'flex-end' }}>
-            {gstMode === 'exclusive' && (
-              <Field label={t('qs.gstRate')}>
-                <input
-                  className="input"
-                  inputMode="decimal"
-                  type="number"
-                  min={0}
-                  step={0.01}
-                  value={gstRate}
-                  onChange={e => setGstRate(Number(e.target.value))}
-                />
-              </Field>
-            )}
-            <Field label={t('qs.gstMode')}>
-              <div className="tabbar">
-                <button className={gstMode === 'inclusive' ? 'active' : ''} onClick={() => setGstMode('inclusive')}>{t('qs.inclusive')}</button>
-                <button className={gstMode === 'exclusive' ? 'active' : ''} onClick={() => setGstMode('exclusive')}>{t('qs.exclusive')}</button>
-              </div>
-            </Field>
-          </div>
+          <Field label={t('qs.gstRate')} hint="Divides equally among participants">
+            <input
+              className="input"
+              inputMode="decimal"
+              type="number"
+              min={0}
+              step={0.01}
+              value={gstRateStr}
+              onChange={e => setGstRateStr(e.target.value)}
+            />
+          </Field>
         </div>
+
+        {total > 0 && gstRate > 0 && (
+          <div className="row mt-3" style={{ gap: 20 }}>
+            <span className="muted">{t('qs.base')}: <strong className="mono">{formatINR(baseAmount)}</strong></span>
+            <span className="muted">{t('qs.gst')}: <strong className="mono">{formatINR(gstAmount)}</strong></span>
+          </div>
+        )}
       </Card>
 
       <Card>
@@ -223,6 +290,7 @@ export default function QuickSplit() {
                 placeholder="Name"
                 value={r.name}
                 onChange={e => updateRow(r.id, { name: e.target.value })}
+                aria-label="Participant name"
               />
               {mode === 'percent' && (
                 <input
@@ -234,23 +302,24 @@ export default function QuickSplit() {
                   step={0.01}
                   value={r.pct}
                   onChange={e => updateRow(r.id, { pct: Number(e.target.value) })}
+                  aria-label="Percent"
                 />
               )}
               {mode === 'custom' && (
                 <input
                   className="input"
                   inputMode="decimal"
-                  value={paiseToRupeesString(r.custom)}
-                  onChange={e => {
-                    try { updateRow(r.id, { custom: rupeesToPaise(e.target.value) }); } catch { /* ignore */ }
-                  }}
+                  // Changed to raw string input to allow typing decimals naturally
+                  value={r.custom}
+                  onChange={e => updateRow(r.id, { custom: e.target.value })}
+                  aria-label="Custom amount"
                 />
               )}
               <span className="mono" style={{ minWidth: 90, textAlign: 'right', fontWeight: 700 }}>
                 {formatINR(allocations[i] ?? 0)}
               </span>
               {r.id !== ME_ID && (
-                <button className="btn btn-sm btn-ghost" onClick={() => removeRow(r.id)}>✕</button>
+                <button className="btn btn-sm btn-ghost" onClick={() => removeRow(r.id)} aria-label="Remove">✕</button>
               )}
             </div>
           ))}
@@ -271,6 +340,12 @@ export default function QuickSplit() {
               {remaining > 0 ? `${t('qs.remaining')}: ${formatINR(remaining)}` : `${t('qs.over')}: ${formatINR(-remaining)}`}
             </div>
           )}
+          {mode === 'percent' && !pctOk && (
+            <div className="pill pill-warning mt-2">Percentages must sum to 100 (currently {pctSum})</div>
+          )}
+          {mode === 'custom' && !customOk && (
+            <div className="pill pill-warning mt-2">Custom amounts must equal the Base Amount ({formatINR(baseAmount)})</div>
+          )}
         </div>
       </Card>
 
@@ -280,12 +355,11 @@ export default function QuickSplit() {
           className="select mt-2"
           value={paidBy}
           onChange={e => setPaidBy(e.target.value)}
+          aria-label={t('qs.paidBy')}
         >
           {rows.map(r => <option key={r.id} value={r.id}>{r.name || r.id}</option>)}
         </select>
       </Card>
-
-      {error && <div className="pill pill-danger mt-3">{error}</div>}
 
       <div className="mt-4">
         <Button variant="primary" block onClick={handleSplit} disabled={!canSave || saving}>
@@ -293,11 +367,58 @@ export default function QuickSplit() {
         </Button>
       </div>
 
+      {error && <div className="pill pill-danger mt-3">{error}</div>}
+
+      {showHistory && (
+        <Card className="mt-4">
+          <div className="row" style={{ justifyContent: 'space-between' }}>
+            <h3>Past Splits</h3>
+            <Button size="sm" variant="danger" onClick={clearAllHistory}>Clear All</Button>
+          </div>
+          <div className="list mt-2">
+            {pastSplits.map(s => (
+              <div 
+                key={s.id} 
+                className="list-item" 
+                onClick={() => openHistoricalPreview(s)} 
+                style={{ cursor: 'pointer' }}
+              >
+                <div>
+                  <strong>{formatDate(s.date)}</strong> · {s.participants.length} people
+                  <div className="muted" style={{ fontSize: '0.75rem' }}>
+                    Paid by {s.participants.find(p => p.id === s.payers[0]?.participantId)?.name || 'Unknown'}
+                  </div>
+                </div>
+                <div className="row" style={{ flex: '0 0 auto', gap: 8 }}>
+                  <span className="mono" style={{ fontWeight: 700 }}>{formatINR(s.total)}</span>
+                  <Button 
+                    size="sm" 
+                    variant="ghost" 
+                    onClick={(e) => {
+                      e.stopPropagation(); 
+                      deleteExpense(s.id);
+                    }}
+                  >
+                    ✕
+                  </Button>
+                </div>
+              </div>
+            ))}
+            {pastSplits.length === 0 && <p className="muted">No saved splits.</p>}
+          </div>
+        </Card>
+      )}
+
+      <div style={{ height: 'var(--space-6)' }} />
+
+      {/* Split Bill Preview Modal */}
       {showPreview && previewData && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'grid', placeItems: 'center', zIndex: 50, padding: 16 }}>
           <div className="card fade-in" style={{ maxWidth: 400, width: '100%', maxHeight: '85vh', overflowY: 'auto', background: 'var(--bg-elevated)' }}>
             <h2 style={{ fontSize: '1.5rem', marginBottom: 4 }}>Who owes whom</h2>
-            <p className="muted" style={{ marginBottom: 16 }}>Saved automatically.</p>
+            <p className="muted" style={{ marginBottom: 16 }}>
+              {isHistoricalView ? 'Historical record' : 'Saved automatically.'}
+            </p>
             
             <div style={{ background: 'var(--bg-subtle)', padding: 12, borderRadius: 12, marginBottom: 16 }}>
               <div className="row" style={{ justifyContent: 'space-between', fontWeight: 700 }}>
@@ -318,9 +439,14 @@ export default function QuickSplit() {
                   </div>
                 </div>
               ))}
+              {previewData.debts.length === 0 && (
+                <div className="muted" style={{ textAlign: 'center', padding: '16px 0' }}>
+                  No one owes anything.
+                </div>
+              )}
             </div>
 
-            <Button variant="primary" block style={{ marginTop: 24 }} onClick={() => { setShowPreview(false); navigate(`/expense/${previewData.id}`); }}>
+            <Button variant="primary" block style={{ marginTop: 24 }} onClick={handleDone}>
               {t('common.done')}
             </Button>
           </div>
