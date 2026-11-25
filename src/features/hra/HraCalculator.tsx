@@ -17,7 +17,7 @@ interface HraRecord {
   timestamp: string;
 }
 
-const FY = '2025-26';
+const TAX_YEAR = '2026-27';
 
 export default function HraCalculator() {
   const { t } = useI18n();
@@ -112,7 +112,7 @@ export default function HraCalculator() {
         </Button>
       </div>
       <p className="muted">
-        Calculate your House Rent Allowance exemption under Section 10(13A) for FY {FY}.
+        Calculate your House Rent Allowance exemption under Section 11 read with Schedule III (Table Sl. No. 11) for Tax Year {TAX_YEAR}.
       </p>
 
       <div className="pill pill-warning mt-2" style={{ fontSize: '0.85rem' }}>
@@ -153,7 +153,7 @@ export default function HraCalculator() {
               onChange={e => setRentStr(e.target.value)}
             />
           </Field>
-          <Field label="City Type (FY 2025-26)">
+          <Field label={`City Type (Tax Year ${TAX_YEAR})`}>
             <div className="tabbar">
               <button className={isMetro ? 'active' : ''} onClick={() => setIsMetro(true)}>
                 Metro (50%)
@@ -163,8 +163,8 @@ export default function HraCalculator() {
               </button>
             </div>
             <span className="muted" style={{ fontSize: '0.75rem', marginTop: 4 }}>
-              Metro for FY {FY}: Delhi, Mumbai, Kolkata, Chennai only.
-              Bengaluru, Hyderabad, Pune, Ahmedabad are <strong>non-metro (40%)</strong> this year — they move to 50% from FY 2026-27.
+              Metro for Tax Year {TAX_YEAR}: Delhi, Mumbai, Kolkata, Chennai, Bengaluru, Hyderabad, Pune, Ahmedabad.
+              All other cities are non-metro (40%).
             </span>
           </Field>
         </div>
@@ -274,9 +274,7 @@ export default function HraCalculator() {
       <div className="mt-4" style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
         <p><strong>Disclaimer:</strong> For informational purposes only. Consult a CA for precise tax planning.</p>
         <p>
-          <strong>FY 2025-26 rules:</strong> Exemption under Section 10(13A) read with Rule 2A. Salary for HRA =
-          Basic + DA (retirement-linked) + turnover commission. Rent receipts required; landlord PAN mandatory if
-          annual rent exceeds ₹1,00,000. If your salary or rent changed mid-year, calculate each period separately.
+          <strong>Tax Year {TAX_YEAR} rules:</strong> Exemption under Section 11 read with Schedule III (Table Sl. No. 11) and Rule 279 of the Income-tax Act, 2025. Salary for HRA = Basic + DA (retirement-linked) + turnover commission. Rent receipts required; landlord PAN mandatory if annual rent exceeds ₹1,00,000. If your salary or rent changed mid-year, calculate each period separately.
         </p>
       </div>
     </div>

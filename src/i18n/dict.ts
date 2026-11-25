@@ -20,7 +20,7 @@ export const LANGS: Array<{ code: Lang; label: string }> = [
 type Dict = Record<string, string>;
 
 const en: Dict = {
-  'brand': 'Vibhajan',
+  'brand': 'Ganaka',
   'nav.quickSplit': 'Quick Split',
   'nav.balances': 'Balances',
   'nav.groups': 'Groups',
@@ -41,7 +41,6 @@ const en: Dict = {
   'common.description': 'Description',
   'common.confirm': 'Confirm',
   'common.close': 'Close',
-  'common.settings': 'Settings',
   'common.results': 'Results',
   'common.history': 'History',
   'common.clearHistory': 'Clear All',
@@ -50,6 +49,8 @@ const en: Dict = {
   'common.recommendation': 'Recommendation',
   'common.loading': 'Loading…',
   'common.error': 'An error occurred.',
+  'common.theme': 'Theme',
+  'common.language': 'Language',
 
   // Tools
   'tool.quickSplit': 'Split Bill',
@@ -58,7 +59,6 @@ const en: Dict = {
   'tool.sip': 'SIP Calculator',
   'tool.incomeTax': 'Income Tax',
   'tool.currency': 'Currency Converter',
-  'tool.nriTax': 'NRI Tax',
   'tool.nriDays': 'NRI Day Tracker',
   'tool.hra': 'HRA Calculator',
   'tool.tds': 'TDS Calculator',
@@ -67,11 +67,7 @@ const en: Dict = {
   'qs.title': 'Quick Split',
   'qs.subtitle': 'Enter a bill. Split instantly.',
   'qs.totalBill': 'Total bill (incl. GST)',
-  'qs.totalBillExcl': 'Total bill (excl. GST)',
   'qs.gstRate': 'GST %',
-  'qs.gstMode': 'GST mode',
-  'qs.inclusive': 'Inclusive',
-  'qs.exclusive': 'Exclusive',
   'qs.base': 'Base',
   'qs.gst': 'GST',
   'qs.participants': 'Participants',
@@ -82,13 +78,9 @@ const en: Dict = {
   'qs.percent': 'Percentage',
   'qs.custom': 'Custom',
   'qs.paidBy': 'Paid by',
-  'qs.attachBill': 'Attach bill',
-  'qs.saveExpense': 'Save expense',
   'qs.splitBill': 'Split Bill',
   'qs.remaining': 'Remaining',
   'qs.over': 'Over-allocated by',
-  'qs.mismatch': 'Allocation must equal total',
-  'qs.required': 'Required',
 
   // Expense Detail & Status
   'exp.title': 'Expense',
@@ -128,24 +120,10 @@ const en: Dict = {
   'hist.exportPdf': 'Export PDF',
   'hist.empty': 'No expenses yet.',
 
-  // Settings
-  'set.title': 'Settings',
-  'set.theme': 'Theme',
-  'set.light': 'Light',
-  'set.dark': 'Dark',
-  'set.language': 'Language',
-  'set.backup': 'Backup',
-  'set.restore': 'Restore',
-  'set.exportCsv': 'Export all CSV',
-  'set.exportPdf': 'Print report',
-  'set.profileName': 'Your name',
-  'set.upi': 'UPI ID',
-  'set.localMode': 'Local mode — data stored on this device only',
-
   // EMI Calculator
   'emi.amount': 'Loan Amount (₹)',
   'emi.rate': 'Interest Rate (% p.a.)',
-  'emi.tenure': 'Tenure (Years)',
+  'emi.tenure': 'Tenure',
   'emi.monthly': 'Monthly EMI',
   'emi.totalInterest': 'Total Interest',
   'emi.totalPayment': 'Total Payment',
@@ -174,12 +152,12 @@ const en: Dict = {
   'tax.gross': 'Gross Annual Income (₹)',
   'tax.salaried': 'Salaried / Pensioner?',
   'tax.deductions': 'Deductions (Old Regime)',
-  'tax.newRegime': 'New Regime (Default)',
+  'tax.newRegime': 'New Regime (Section 202)',
   'tax.oldRegime': 'Old Regime',
   'tax.stdDeduction': 'Standard Deduction',
   'tax.taxableIncome': 'Taxable Income',
   'tax.slabTax': 'Slab Tax',
-  'tax.rebate87A': 'Section 87A Rebate',
+  'tax.rebate156': 'Section 156 Rebate',
   'tax.surcharge': 'Surcharge',
   'tax.marginalRelief': 'Marginal Relief',
   'tax.cess': 'Health & Education Cess (4%)',
@@ -213,114 +191,47 @@ const en: Dict = {
   'tds.deducted': 'TDS Deducted',
   'tds.netAmount': 'Net Amount Received',
 
-  // NRI Tax Calculator
-  'nri.daysThisYear': 'Days in India this FY',
-  'nri.daysPrev4': 'Days in India (prev 4 years)',
-  'nri.indianIncome': 'Indian-source income (₹)',
-  'nri.isCitizen': 'Indian Citizen?',
-  'nri.liableAbroad': 'Liable to tax abroad?',
-  'nri.status': 'Residency Status',
-  'nri.taxOnIncome': 'Tax on Indian Income',
-  'nri.dtaa': 'Country of Residence (for DTAA)',
-
   // NRI Day Tracker
-  'nridays.fy': 'Financial Year',
+  'nridays.fy': 'Tax Year',
   'nridays.travelLog': 'Travel Log',
   'nridays.entry': 'Entry Date (Arrival)',
   'nridays.exit': 'Exit Date (Departure)',
   'nridays.addTrip': 'Add Trip',
   'nridays.manual': 'Manual Day Input',
-  'nridays.daysThisFy': 'Days in India this FY',
-  'nridays.daysPrev4': 'Days in India in preceding 4 FYs',
+  'nridays.daysThisFy': 'Days in India this tax year',
+  'nridays.daysPrev4': 'Days in India in preceding 4 tax years',
   'nridays.excludeArrival': 'Exclude arrival day from count',
   'nridays.totalDays': 'Total days in India',
 };
 
 const hi: Dict = {
   ...en,
-  'brand': 'विभाजन',
+  'brand': 'गणक',
   'landing.subtitle': 'आपका संपूर्ण भारतीय वित्तीय टूलकिट।',
-  'nav.quickSplit': 'त्वरित विभाजन',
-  'nav.balances': 'बकाया',
-  'nav.groups': 'समूह',
-  'nav.history': 'इतिहास',
-  'common.save': 'सहेजें',
-  'common.cancel': 'रद्द करें',
-  'common.delete': 'हटाएँ',
-  'common.edit': 'संपादित करें',
-  'common.add': 'जोड़ें',
-  'common.amount': 'राशि',
-  'common.date': 'तारीख',
-  'common.settings': 'सेटिंग्स',
-  'common.history': 'इतिहास',
-  'common.clearHistory': 'सभी हटाएँ',
-  'common.saveToHistory': 'इतिहास में सहेजें',
-  
+  'common.theme': 'थीम',
+  'common.language': 'भाषा',
   'tool.quickSplit': 'बिल विभाजित करें',
   'tool.emi': 'EMI कैलकुलेटर',
   'tool.gst': 'GST कैलकुलेटर',
   'tool.sip': 'SIP कैलकुलेटर',
   'tool.incomeTax': 'आयकर कैलकुलेटर',
   'tool.currency': 'मुद्रा परिवर्तक',
-  'tool.nriTax': 'NRI टैक्स',
   'tool.nriDays': 'NRI दिन ट्रैकर',
   'tool.hra': 'HRA कैलकुलेटर',
   'tool.tds': 'TDS कैलकुलेटर',
-
-  'qs.title': 'त्वरित विभाजन',
-  'qs.totalBill': 'कुल बिल (GST सहित)',
-  'qs.totalBillExcl': 'कुल बिल (GST रहित)',
-  'qs.participants': 'प्रतिभागी',
-  'qs.addParticipant': 'प्रतिभागी जोड़ें',
-  'qs.loadGroup': 'समूह से लोड करें…',
-  'qs.splitMode': 'विभाजन मोड',
-  'qs.saveExpense': 'खर्च सहेजें',
-  'qs.splitBill': 'बिल विभाजित करें',
-  'qs.equal': 'समान', 
-  'qs.percent': 'प्रतिशत', 
-  'qs.custom': 'कस्टम',
   
-  'bal.title': 'बकाया', 
-  'bal.owesMe': 'मुझे देना है', 
-  'bal.iOwe': 'मुझे देना है',
-  'grp.title': 'समूह', 
-  'grp.create': 'समूह बनाएँ', 
-  'grp.name': 'समूह का नाम',
-  'hist.title': 'इतिहास', 
-  'hist.search': 'खोजें', 
-  'hist.empty': 'अभी कोई खर्च नहीं।',
-  'set.title': 'सेटिंग्स', 
-  'set.theme': 'थीम', 
-  'set.language': 'भाषा',
-  'set.light': 'लाइट', 
-  'set.dark': 'डार्क', 
-  'set.backup': 'बैकअप', 
-  'set.restore': 'पुनर्स्थापित',
-  'status.paid': 'चुकता', 
-  'status.partial': 'आंशिक भुगतान', 
-  'status.unpaid': 'अदत्त',
-
-  'emi.amount': 'ऋण राशि (₹)',
-  'emi.rate': 'ब्याज दर (% वार्षिक)',
-  'emi.tenure': 'अवधि (वर्ष)',
-  'emi.monthly': 'मासिक EMI',
-  'emi.totalInterest': 'कुल ब्याज',
-  'emi.totalPayment': 'कुल भुगतान',
-
-  'tax.gross': 'सकल वार्षिक आय (₹)',
-  'tax.newRegime': 'नई व्यवस्था (डिफ़ॉल्ट)',
-  'tax.oldRegime': 'पुरानी व्यवस्था',
-  'tax.totalTaxable': 'कुल देय कर',
+  'tax.newRegime': 'नई व्यवस्था (धारा 202)',
+  'tax.rebate156': 'धारा 156 छूट',
 };
 
-const te: Dict = { ...en, 'nav.quickSplit': 'త్వరిత చీలిక', 'nav.balances': 'నిల్వలు', 'nav.groups': 'గ్రూపులు', 'nav.history': 'చరిత్ర', 'common.save': 'సేవ్', 'qs.title': 'త్వరిత చీలిక' };
-const ta: Dict = { ...en, 'nav.quickSplit': 'விரைவு பிரிப்பு', 'nav.balances': 'இருப்புகள்', 'nav.groups': 'குழுக்கள்', 'nav.history': 'வரலாறு', 'common.save': 'சேமி', 'qs.title': 'விரைவு பிரிப்பு' };
-const kn: Dict = { ...en, 'nav.quickSplit': 'ತ್ವರಿತ ವಿಭಜನೆ', 'nav.balances': 'ಬಾಕಿಗಳು', 'nav.groups': 'ಗುಂಪುಗಳು', 'nav.history': 'ಇತಿಹಾಸ', 'common.save': 'ಉಳಿಸಿ', 'qs.title': 'ತ್ವರಿತ ವಿಭಜನೆ' };
-const ml: Dict = { ...en, 'nav.quickSplit': 'ദ്രുത വിഭജനം', 'nav.balances': 'ബാലൻസുകൾ', 'nav.groups': 'ഗ്രൂപ്പുകൾ', 'nav.history': 'ചരിത്രം', 'common.save': 'സംരക്ഷിക്കുക', 'qs.title': 'ദ്രുത വിഭജനം' };
-const mr: Dict = { ...en, 'nav.quickSplit': 'झटपट विभागणी', 'nav.balances': 'शिल्लक', 'nav.groups': 'गट', 'nav.history': 'इतिहास', 'common.save': 'जतन करा', 'qs.title': 'झटपट विभागणी' };
-const bn: Dict = { ...en, 'nav.quickSplit': 'দ্রুত বিভাজন', 'nav.balances': 'ব্যালেন্স', 'nav.groups': 'গ্রুপ', 'nav.history': 'ইতিহাস', 'common.save': 'সংরক্ষণ', 'qs.title': 'দ্রুত বিভাজন' };
-const gu: Dict = { ...en, 'nav.quickSplit': 'ઝડપી વિભાજન', 'nav.balances': 'બાકી', 'nav.groups': 'જૂથો', 'nav.history': 'ઇતિહાસ', 'common.save': 'સાચવો', 'qs.title': 'ઝડપી વિભાજન' };
-const pa: Dict = { ...en, 'nav.quickSplit': 'ਤੇਜ਼ ਵੰਡ', 'nav.balances': 'ਬਕਾਇਆ', 'nav.groups': 'ਸਮੂਹ', 'nav.history': 'ਇਤਿਹਾਸ', 'common.save': 'ਸੰਭਾਲੋ', 'qs.title': 'ਤੇਜ਼ ਵੰਡ' };
-const or: Dict = { ...en, 'nav.quickSplit': 'ଦ୍ରୁତ ବିଭାଜନ', 'nav.balances': 'ବକେୟା', 'nav.groups': 'ଗୋଷ୍ଠୀ', 'nav.history': 'ଇତିହାସ', 'common.save': 'ସଞ୍ଚୟ', 'qs.title': 'ଦ୍ରୁତ ବିଭାଜନ' };
+const te: Dict = { ...en, 'brand': 'గణకుడు', 'landing.subtitle': 'మీ సంపూర్ణ భారతీయ ఆర్థిక సాధనం.' };
+const ta: Dict = { ...en, 'brand': 'கணకன்', 'landing.subtitle': 'உங்கள் முழுமையான இந்திய நிதிக் கருவி.' };
+const kn: Dict = { ...en, 'brand': 'ಗಣಕ', 'landing.subtitle': 'ನಿಮ್ಮ ಸಂಪೂರ್ಣ ಭಾರತೀಯ ಆರ್ಥಿಕ ಪರಿಕರ.' };
+const ml: Dict = { ...en, 'brand': 'ഗണക', 'landing.subtitle': 'നിങ്ങളുടെ സമ്പൂർണ്ണ ഇന്ത്യൻ സാമ്പത്തിക ടൂൾകിറ്റ്.' };
+const mr: Dict = { ...en, 'brand': 'गणक', 'landing.subtitle': 'तुमचे संपूर्ण भारतीय आर्थिक साधन.' };
+const bn: Dict = { ...en, 'brand': 'গণক', 'landing.subtitle': 'আপনার সম্পূর্ণ ভারতীয় আর্থিক টুলকিট।' };
+const gu: Dict = { ...en, 'brand': 'ગણક', 'landing.subtitle': 'તમારું સંપૂર્ણ ભારતીય નાણાકીય સાધન.' };
+const pa: Dict = { ...en, 'brand': 'ਗਣਕ', 'landing.subtitle': 'ਤੁਹਾਡੀ ਪੂਰੀ ਭਾਰਤੀ ਵਿੱਤੀ ਟੂਲਕਿਟ।' };
+const or: Dict = { ...en, 'brand': 'ଗଣକ', 'landing.subtitle': 'ଆପଣଙ୍କର ସମ୍ପୂର୍ଣ୍ଣ ଭାରତୀୟ ଆର୍ଥିକ ଟୁଲକିଟ୍।' };
 
 export const DICTS: Record<Lang, Dict> = { en, hi, te, ta, kn, ml, mr, bn, gu, pa, or };

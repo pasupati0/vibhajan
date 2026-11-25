@@ -8,86 +8,97 @@ import { useI18n } from '../../i18n/I18nProvider';
 
 type TdsSection =
   | '192'    // Salary
-  | '194A'   // Interest (bank / others)
+  | '194A'   // Interest
   | '194C'   // Contractor
-  | '194I'   // Rent (land/building or P&M)
-  | '194J'   // Professional / technical fees
+  | '194I'   // Rent
+  | '194J'   // Professional / Technical
   | '194IA'  // Sale of immovable property
-  | '194T';  // Payments to partners (FY 2025-26 onwards)
+  | '194T';  // Payments to partners
 
 interface SectionDef {
   id: TdsSection;
   label: string;
-  rate: number;            // default rate (%)
-  rateNoPan: number;       // Section 206AA rate
-  thresholdDescription: string;
+  newSection: string; // For Income-tax Act, 2025
+  rate: number;
+  rateNoPan: number;
+  thresholdValue: number;
   isMonthlyThreshold?: boolean;
-  thresholdValue: number;  // in INR (annual or monthly as noted)
-  minSingleTxn?: number;   // for 194C single txn threshold
-  annualAggregate?: number;// for 194C aggregate threshold
+  thresholdDescription: string;
+  hasSubType?: boolean;
 }
 
 const SECTIONS: SectionDef[] = [
   {
     id: '192',
     label: '192 — Salary',
-    rate: 0, // slab-based; handled separately
+    newSection: '392(1)',
+    rate: 0,
     rateNoPan: 0,
-    thresholdDescription: 'Basic exemption limit / slab-based',
     thresholdValue: 0,
+    thresholdDescription: 'Slab-based',
   },
   {
     id: '194A',
-    label: '194A — Interest (bank/co-op/post office)',
+    label: '194A — Interest',
+    newSection: '393(1)[5(ii)]',
     rate: 10,
     rateNoPan: 20,
-    thresholdDescription: '₹50,000/year (₹1,00,000 for senior citizens)',
-    thresholdValue: 50000,
+    thresholdValue: 50000, // Bank default
+    thresholdDescription: '₹50,000 (₹1L seniors). Others: ₹10,000.',
+    hasSubType: true,
   },
   {
     id: '194C',
-    label: '194C — Contractor / Sub-contractor',
-    rate: 1, // for individual/HUF; 2% for others
+    label: '194C — Contractor',
+    newSection: '393(1)[6(i)]',
+    rate: 1, // Ind/HUF default
     rateNoPan: 20,
-    thresholdDescription: '₹30,000 single txn OR ₹1,00,000 aggregate/year',
     thresholdValue: 0,
-    minSingleTxn: 30000,
-    annualAggregate: 100000,
+    thresholdDescription: '₹30,000 single / ₹1,00,000 aggregate',
+    hasSubType: true,
   },
   {
     id: '194I',
-    label: '194I — Rent (land / building / furniture)',
-    rate: 10,
+    label: '194I — Rent',
+    newSection: '393(1)[2(ii)]',
+    rate: 10, // Land/Building default
     rateNoPan: 20,
-    thresholdDescription: '₹50,000 per month (₹6,00,000/year)',
     thresholdValue: 50000,
     isMonthlyThreshold: true,
+    thresholdDescription: '₹50,000 per month',
+    hasSubType: true,
   },
   {
     id: '194J',
-    label: '194J — Professional / Technical fees',
-    rate: 10,
+    label: '194J — Professional / Technical',
+    newSection: '393(1)[6(iii)]',
+    rate: 10, // Professional default
     rateNoPan: 20,
-    thresholdDescription: '₹50,000/year',
     thresholdValue: 50000,
+    thresholdDescription: '₹50,000/year',
+    hasSubType: true,
   },
   {
     id: '194IA',
     label: '194IA — Sale of immovable property',
+    newSection: '393(1)[3(i)]',
     rate: 1,
     rateNoPan: 20,
-    thresholdDescription: '₹50,00,000 (aggregate consideration)',
     thresholdValue: 5000000,
+    thresholdDescription: '₹50,00,000',
   },
   {
     id: '194T',
-    label: '194T — Payments to partners (firm/LLP)',
+    label: '194T — Payments to partners',
+    newSection: '393(1)[6(iv)]',
     rate: 10,
     rateNoPan: 20,
-    thresholdDescription: '₹20,000/year (aggregate)',
     thresholdValue: 20000,
+    thresholdDescription: '₹20,000/year',
   },
 ];
+
+type SubType = 'bank' | 'nonBank' | 'individual' | 'company' | 'landBuilding' | 'machinery' | 'professional' | 'technical';
 
 interface TdsRecord {
   id: string;
@@ -105,8 +116,9 @@ export default function TdsCalculator() {
   const [sectionId, setSectionId] = useState<TdsSection>('194A');
   const [amountStr, setAmountStr] = useState('100000');
   const [panAvailable, setPanAvailable] = useState(true);
-  const [isSenior, setIsSenior] = useState(false); // for 194A
-  const [isIndividual, setIsIndividual] = useState(true); // for 194C rate
+  const [isSenior, setIsSenior] = useState(false);
+  const [subType, setSubType] = useState<SubType>('bank'); // Default for 194A
+  
   const [history, setHistory] = useState<TdsRecord[]>([]);
   const [showHistory, setShowHistory] = useState(false);
 
@@ -116,58 +128,59 @@ export default function TdsCalculator() {
 
   const section = SECTIONS.find(s => s.id === sectionId)!;
 
+  // Reset subType when section changes
+  useEffect(() => {
+    if (sectionId === '194A') setSubType('bank');
+    if (sectionId === '194C') setSubType('individual');
+    if (sectionId === '194I') setSubType('landBuilding');
+    if (sectionId === '194J') setSubType('professional');
+  }, [sectionId]);
+
   const result = useMemo(() => {
     let amount = 0;
     try { amount = Math.round(parseFloat(amountStr) * 100); } catch { return null; }
     if (amount <= 0) return null;
 
-    // Salary is slab-based; for a simple calculator we ask user to supply
-    // the rate they're in, or we display that salary TDS = slab rate.
     if (sectionId === '192') {
       return {
         tds: null,
         rate: null,
-        thresholdApplied: false,
-        note: 'Salary TDS depends on your slab (old/new regime). Use the Income Tax Calculator for exact figures.',
+        note: 'Salary TDS depends on your slab. Use the Income Tax Calculator for exact figures.',
         netAmount: amount,
       };
     }
 
-    // Threshold check
+    // Dynamic Rate & Threshold
+    let rate = section.rate;
+    let threshold = section.thresholdValue;
+
+    if (sectionId === '194A') {
+      if (subType === 'nonBank') threshold = 10000;
+    } else if (sectionId === '194C') {
+      if (subType === 'company') rate = 2;
+    } else if (sectionId === '194I') {
+      if (subType === 'machinery') rate = 2;
+    } else if (sectionId === '194J') {
+      if (subType === 'technical') rate = 2;
+    }
+
+    if (!panAvailable) rate = section.rateNoPan;
+
+    // Threshold check (simplified)
     let thresholdApplied = false;
     if (sectionId === '194C') {
-      if (amount < (section.minSingleTxn ?? 0) && amount < (section.annualAggregate ?? 0)) {
-        thresholdApplied = true;
-      }
+      if (amount < 3000000 && amount < 10000000) thresholdApplied = true; // Simplified for single txn
     } else if (section.isMonthlyThreshold) {
-      // Threshold is ₹50,000 per month; user enters annual/aggregate rent.
-      // If the total amount is below ₹50,000 (i.e., likely a single month), skip.
-      if (amount < section.thresholdValue * 100) thresholdApplied = true;
+      if (amount < threshold * 100) thresholdApplied = true;
     } else {
-      const effThreshold = sectionId === '194A' && isSenior
-        ? 100000
-        : section.thresholdValue;
+      const effThreshold = sectionId === '194A' && isSenior ? 100000 : threshold;
       if (amount < effThreshold * 100) thresholdApplied = true;
     }
-
-    // Rate selection
-    let rate: number;
-    if (sectionId === '194C') {
-      rate = isIndividual ? 1 : 2;
-    } else if (sectionId === '194A' && isSenior) {
-      rate = 10;
-    } else {
-      rate = section.rate;
-    }
-
-    // No-PAN override
-    if (!panAvailable) rate = section.rateNoPan;
 
     if (thresholdApplied) {
       return {
         tds: 0,
         rate: 0,
-        thresholdApplied: true,
         note: `Amount is below the ${section.thresholdDescription} threshold. No TDS deducted.`,
         netAmount: amount,
       };
@@ -177,11 +190,10 @@ export default function TdsCalculator() {
     return {
       tds,
       rate,
-      thresholdApplied: false,
       note: null,
       netAmount: amount - tds,
     };
-  }, [sectionId, amountStr, panAvailable, isSenior, isIndividual, section]);
+  }, [sectionId, amountStr, panAvailable, isSenior, subType, section]);
 
   async function saveToHistory() {
     if (!result || result.tds === null) return;
@@ -219,11 +231,11 @@ export default function TdsCalculator() {
         </Button>
       </div>
       <p className="muted">
-        Calculate TDS under major sections for FY 2025-26 (post-Budget 2025 thresholds).
+        Calculate TDS under major sections for Tax Year 2026-27 (Income-tax Act, 2025).
       </p>
 
       <Card className="mt-4">
-        <div className="grid-2">
+        <div className="grid-2" style={{ alignItems: 'start' }}>
           <Field label="Section / Nature of Payment">
             <select
               className="select"
@@ -244,13 +256,39 @@ export default function TdsCalculator() {
             />
           </Field>
 
-          {sectionId !== '192' && (
-            <Field label="PAN Available?">
+          {/* Sub-type selectors */}
+          {sectionId === '194A' && (
+            <Field label="Payer Type">
               <div className="tabbar">
-                <button className={panAvailable ? 'active' : ''} onClick={() => setPanAvailable(true)}>Yes</button>
-                <button className={!panAvailable ? 'active' : ''} onClick={() => setPanAvailable(false)}>
-                  No (206AA)
-                </button>
+                <button className={subType === 'bank' ? 'active' : ''} onClick={() => setSubType('bank')}>Bank/Co-op/Post</button>
+                <button className={subType === 'nonBank' ? 'active' : ''} onClick={() => setSubType('nonBank')}>Others</button>
+              </div>
+            </Field>
+          )}
+
+          {sectionId === '194C' && (
+            <Field label="Payee Type">
+              <div className="tabbar">
+                <button className={subType === 'individual' ? 'active' : ''} onClick={() => setSubType('individual')}>Individual/HUF (1%)</button>
+                <button className={subType === 'company' ? 'active' : ''} onClick={() => setSubType('company')}>Company/Other (2%)</button>
+              </div>
+            </Field>
+          )}
+
+          {sectionId === '194I' && (
+            <Field label="Rent Type">
+              <div className="tabbar">
+                <button className={subType === 'landBuilding' ? 'active' : ''} onClick={() => setSubType('landBuilding')}>Land/Building (10%)</button>
+                <button className={subType === 'machinery' ? 'active' : ''} onClick={() => setSubType('machinery')}>Plant/Machinery (2%)</button>
+              </div>
+            </Field>
+          )}
+
+          {sectionId === '194J' && (
+            <Field label="Service Type">
+              <div className="tabbar">
+                <button className={subType === 'professional' ? 'active' : ''} onClick={() => setSubType('professional')}>Professional (10%)</button>
+                <button className={subType === 'technical' ? 'active' : ''} onClick={() => setSubType('technical')}>Technical (2%)</button>
               </div>
             </Field>
           )}
@@ -264,25 +302,17 @@ export default function TdsCalculator() {
             </Field>
           )}
 
-          {sectionId === '194C' && (
-            <Field label="Payee Type">
-              <div className="tabbar">
-                <button className={isIndividual ? 'active' : ''} onClick={() => setIsIndividual(true)}>
-                  Individual / HUF (1%)
-                </button>
-                <button className={!isIndividual ? 'active' : ''} onClick={() => setIsIndividual(false)}>
-                  Company / Other (2%)
-                </button>
-              </div>
-            </Field>
-          )}
+          <Field label="PAN Available?">
+            <div className="tabbar">
+              <button className={panAvailable ? 'active' : ''} onClick={() => setPanAvailable(true)}>Yes</button>
+              <button className={!panAvailable ? 'active' : ''} onClick={() => setPanAvailable(false)}>No (206AA)</button>
+            </div>
+          </Field>
         </div>
 
-        {sectionId !== '192' && (
-          <div className="pill pill-brand mt-3" style={{ fontSize: '0.82rem' }}>
-            Threshold: {section.thresholdDescription}
-          </div>
-        )}
+        <div className="pill pill-brand mt-3" style={{ fontSize: '0.82rem' }}>
+          Threshold: {section.thresholdDescription} · New Act Section: {section.newSection}
+        </div>
       </Card>
 
       {result && (
@@ -297,10 +327,8 @@ export default function TdsCalculator() {
                   <span className="muted">Gross Amount</span>
                   <span className="mono">{formatINR(Math.round(parseFloat(amountStr || '0') * 100))}</span>
                 </div>
-                {result.thresholdApplied ? (
-                  <div className="pill pill-warning mt-2">
-                    Below threshold — no TDS deducted
-                  </div>
+                {result.note ? (
+                   <div className="pill pill-warning mt-2">{result.note}</div>
                 ) : (
                   <>
                     <div className="row" style={{ justifyContent: 'space-between' }}>
@@ -310,24 +338,17 @@ export default function TdsCalculator() {
                     <div className="divider" />
                     <div className="row" style={{ justifyContent: 'space-between', fontWeight: 700 }}>
                       <span>TDS Deducted</span>
-                      <span className="mono" style={{ color: 'var(--danger)' }}>
-                        {formatINR(result.tds)}
-                      </span>
+                      <span className="mono" style={{ color: 'var(--danger)' }}>{formatINR(result.tds)}</span>
                     </div>
                     <div className="row" style={{ justifyContent: 'space-between', fontWeight: 700 }}>
                       <span>Net Amount Received</span>
-                      <span className="mono" style={{ color: 'var(--success)' }}>
-                        {formatINR(result.netAmount)}
-                      </span>
+                      <span className="mono" style={{ color: 'var(--success)' }}>{formatINR(result.netAmount)}</span>
                     </div>
                   </>
                 )}
               </div>
-              {result.note && <p className="muted mt-2" style={{ fontSize: '0.85rem' }}>{result.note}</p>}
-              {!result.thresholdApplied && result.tds !== null && (
-                <Button variant="primary" className="mt-3" onClick={saveToHistory}>
-                  💾 Save to History
-                </Button>
+              {!result.note && result.tds !== null && (
+                <Button variant="primary" className="mt-3" onClick={saveToHistory}>💾 Save to History</Button>
               )}
             </>
           )}
@@ -348,9 +369,7 @@ export default function TdsCalculator() {
                   <div className="muted" style={{ fontSize: '0.8rem' }}>
                     TDS: {formatINR(h.tds)} {h.panAvailable ? '' : '· No PAN (20%)'}
                   </div>
-                  <div className="muted" style={{ fontSize: '0.7rem' }}>
-                    {new Date(h.timestamp).toLocaleString()}
-                  </div>
+                  <div className="muted" style={{ fontSize: '0.7rem' }}>{new Date(h.timestamp).toLocaleString()}</div>
                 </div>
                 <Button size="sm" variant="ghost" onClick={() => deleteRecord(h.id)}>✕</Button>
               </div>
@@ -361,16 +380,8 @@ export default function TdsCalculator() {
       )}
 
       <div className="mt-4" style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-        <p><strong>Disclaimer:</strong> For informational purposes only. TDS rates and thresholds are as per FY 2025-26 (post-Budget 2025). Consult a CA for filing and compliance.</p>
-        <p>
-          <strong>Key FY 2025-26 changes:</strong> 194A threshold raised to ₹50,000 (₹1,00,000 seniors). 194I rent threshold
-          is now ₹50,000/month. 194J professional fees threshold raised to ₹50,000. New Section 194T (10% TDS on partner
-          payments above ₹20,000 by firms/LLPs).
-        </p>
-        <p>
-          <strong>Salary (192):</strong> TDS is deducted by the employer based on the employee's slab under the chosen regime.
-          Use the Income Tax Calculator to estimate your liability, and ensure your employer has your regime declaration.
-        </p>
+        <p><strong>Disclaimer:</strong> For informational purposes only. TDS rates and thresholds are as per the Income-tax Act, 2025, applicable from Tax Year 2026-27. Consult a CA for filing and compliance.</p>
+        <p><strong>Key changes:</strong> 194A threshold is ₹1,00,000 for senior citizens and ₹50,000 for others (bank). 194I rent threshold is ₹50,000/month. 194J has different rates for professional (10%) vs technical (2%). New Section 194T applies at 10% above ₹20,000.</p>
       </div>
     </div>
   );

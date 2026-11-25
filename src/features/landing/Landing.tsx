@@ -8,9 +8,8 @@ const TOOLS = [
   { path: '/tool/gst', label: 'GST Calculator', icon: '🧾', desc: 'Inclusive & exclusive' },
   { path: '/tool/sip', label: 'SIP Calculator', icon: '📈', desc: 'Mutual fund returns' },
   { path: '/tool/income-tax', label: 'Income Tax', icon: '📊', desc: 'Old vs new regime' },
-  { path: '/tool/currency', label: 'Currency Converter', icon: '💱', desc: 'INR to world' },
-  { path: '/tool/nri-tax', label: 'NRI Tax', icon: '🌍', desc: 'Taxation for NRIs' },
   { path: '/tool/nri-days', label: 'NRI Day Tracker', icon: '📅', desc: '182-day residency rule' },
+  { path: '/tool/currency', label: 'Currency Converter', icon: '💱', desc: 'INR to world' },
   { path: '/tool/hra', label: 'HRA Calculator', icon: '🏠', desc: 'House rent allowance' },
   { path: '/tool/tds', label: 'TDS Calculator', icon: '💸', desc: 'Tax deducted at source' },
 ];
@@ -25,7 +24,7 @@ export default function Landing() {
           {t('brand')}
         </h1>
         <p className="muted" style={{ fontSize: '1.1rem', maxWidth: '600px', margin: '8px auto' }}>
-          Your complete Indian financial toolkit. Fast, accurate, and private.
+          {t('landing.subtitle')}
         </p>
       </header>
 

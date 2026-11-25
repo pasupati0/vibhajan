@@ -10,12 +10,10 @@ const EmiCalculator = lazy(() => import('./features/emi/EmiCalculator'));
 const GstCalculator = lazy(() => import('./features/gst/GstCalculator'));
 const SipCalculator = lazy(() => import('./features/sip/SipCalculator'));
 const IncomeTaxCalculator = lazy(() => import('./features/income-tax/IncomeTaxCalculator'));
-const CurrencyConverter = lazy(() => import('./features/currency/CurrencyConverter'));
-const NriTaxCalculator = lazy(() => import('./features/nri-tax/NriTaxCalculator'));
 const NriDayTracker = lazy(() => import('./features/nri-days/NriDayTracker'));
+const CurrencyConverter = lazy(() => import('./features/currency/CurrencyConverter'));
 const HraCalculator = lazy(() => import('./features/hra/HraCalculator'));
 const TdsCalculator = lazy(() => import('./features/tds/TdsCalculator'));
-const Settings = lazy(() => import('./features/settings/Settings'));
 
 function L({ children }: { children: React.ReactNode }) {
   return <Suspense fallback={<div style={{ padding: 20 }}>Loading…</div>}>{children}</Suspense>;
@@ -32,12 +30,10 @@ export const router = createBrowserRouter([
       { path: 'tool/gst', element: <L><GstCalculator /></L> },
       { path: 'tool/sip', element: <L><SipCalculator /></L> },
       { path: 'tool/income-tax', element: <L><IncomeTaxCalculator /></L> },
-      { path: 'tool/currency', element: <L><CurrencyConverter /></L> },
-      { path: 'tool/nri-tax', element: <L><NriTaxCalculator /></L> },
       { path: 'tool/nri-days', element: <L><NriDayTracker /></L> },
+      { path: 'tool/currency', element: <L><CurrencyConverter /></L> },
       { path: 'tool/hra', element: <L><HraCalculator /></L> },
       { path: 'tool/tds', element: <L><TdsCalculator /></L> },
-      { path: 'settings', element: <L><Settings /></L> },
       { path: '*', element: <Navigate to="/" replace /> },
     ],
   },

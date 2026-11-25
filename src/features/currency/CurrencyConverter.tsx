@@ -1,5 +1,5 @@
 // src/features/currency/CurrencyConverter.tsx
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, Field, Button } from '../../components/ui';
 import { formatINR } from '../../lib/format';
 import { uuid } from '../../lib/id';
@@ -19,7 +19,9 @@ export default function CurrencyConverter() {
   const { t } = useI18n();
   const { repos } = useData();
 
-  const [amountStr, setAmountStr] = useState('1000');
+  const [inrAmount, setInrAmount] = useState('1000');
+  const [targetAmount, setTargetAmount] = useState('');
+  
   const [targetCurrency, setTargetCurrency] = useState('USD');
   const [currencies, setCurrencies] = useState<string[]>([]);
   const [rate, setRate] = useState<number | null>(null);
@@ -35,7 +37,7 @@ export default function CurrencyConverter() {
     void repos.preferences.get<ConversionRecord[]>('currency-history').then(h => setHistory(h ?? []));
   }, [repos]);
 
-  // Fetch available currencies (excluding INR, since it's the base)
+  // Fetch available currencies
   useEffect(() => {
     let cancelled = false;
     async function fetchCurrencies() {
@@ -55,46 +57,32 @@ export default function CurrencyConverter() {
     return () => { cancelled = true; };
   }, []);
 
-  // Fetch latest rate for the selected target currency (with caching)
+  // Fetch latest rate
   const fetchRate = useCallback(async (target: string) => {
     setLoading(true);
     setError(null);
     try {
-      // 1. Check Cache
+      // Check Cache
       const cached = localStorage.getItem(`rate-INR-${target}`);
       if (cached) {
-        try {
-          const { rate: cachedRate, date: cachedDate } = JSON.parse(cached);
-          const today = new Date().toISOString().slice(0, 10);
-          // Use cache if it's from today
-          if (cachedDate === today) {
-            setRate(cachedRate);
-            setLastUpdated(cachedDate);
-            setLoading(false);
-            return;
-          }
-        } catch (e) {
-          // Ignore JSON parse errors and proceed to fetch
-          console.warn('Failed to parse cached rate', e);
+        const { rate: cachedRate, date } = JSON.parse(cached);
+        const today = new Date().toISOString().slice(0, 10);
+        if (date === today) {
+          setRate(cachedRate);
+          setLastUpdated(date);
+          setLoading(false);
+          return;
         }
       }
 
-      // 2. Fetch from API if cache is stale or empty
       const res = await fetch(`https://api.frankfurter.dev/v1/latest?base=INR&symbols=${target}`);
       if (!res.ok) throw new Error('Failed to fetch exchange rate');
       const data = await res.json();
       
       if (data?.rates?.[target]) {
-        const newRate = data.rates[target];
-        const newDate = data.date;
-        setRate(newRate);
-        setLastUpdated(newDate);
-        
-        // 3. Save to Cache
-        localStorage.setItem(
-          `rate-INR-${target}`, 
-          JSON.stringify({ rate: newRate, date: newDate })
-        );
+        setRate(data.rates[target]);
+        setLastUpdated(data.date);
+        localStorage.setItem(`rate-INR-${target}`, JSON.stringify({ rate: data.rates[target], date: data.date }));
       } else {
         throw new Error('Rate not available for selected currency');
       }
@@ -112,20 +100,48 @@ export default function CurrencyConverter() {
     }
   }, [targetCurrency, currencies.length, fetchRate]);
 
-  const convertedAmount = useMemo(() => {
-    const amt = parseFloat(amountStr) || 0;
-    if (rate === null || amt <= 0) return null;
-    return amt * rate;
-  }, [amountStr, rate]);
+  // Update Target Amount when Rate loads or currency changes
+  useEffect(() => {
+    if (rate !== null && inrAmount) {
+      const num = parseFloat(inrAmount);
+      if (!isNaN(num)) {
+        setTargetAmount((num * rate).toFixed(2));
+      }
+    }
+  }, [rate, targetCurrency]); // Note: deliberately not including inrAmount to avoid overwriting user typing
+
+  const handleInrChange = (val: string) => {
+    setInrAmount(val);
+    if (rate !== null) {
+      const num = parseFloat(val);
+      if (!isNaN(num)) {
+        setTargetAmount((num * rate).toFixed(2));
+      } else {
+        setTargetAmount('');
+      }
+    }
+  };
+
+  const handleTargetChange = (val: string) => {
+    setTargetAmount(val);
+    if (rate !== null) {
+      const num = parseFloat(val);
+      if (!isNaN(num)) {
+        setInrAmount((num / rate).toFixed(2));
+      } else {
+        setInrAmount('');
+      }
+    }
+  };
 
   async function saveToHistory() {
-    if (convertedAmount === null || rate === null) return;
+    if (rate === null || !inrAmount || !targetAmount) return;
     const rec: ConversionRecord = {
       id: uuid(),
-      amountINR: amountStr,
+      amountINR: inrAmount,
       targetCurrency,
       rate,
-      convertedAmount,
+      convertedAmount: parseFloat(targetAmount),
       timestamp: new Date().toISOString(),
     };
     const updated = [rec, ...history].slice(0, 50);
@@ -156,24 +172,35 @@ export default function CurrencyConverter() {
       <p className="muted">Convert Indian Rupees (INR) to major world currencies.</p>
 
       <Card className="mt-4">
-        <div className="grid-2">
+        <div className="grid-2" style={{ alignItems: 'start' }}>
           <Field label="Amount in INR (₹)">
             <input
               className="input"
               type="number"
-              value={amountStr}
-              onChange={e => setAmountStr(e.target.value)}
+              value={inrAmount}
+              onChange={e => handleInrChange(e.target.value)}
             />
           </Field>
-          <Field label="Target Currency">
-            <select
-              className="select"
-              value={targetCurrency}
-              onChange={e => setTargetCurrency(e.target.value)}
-              disabled={currencies.length === 0}
-            >
-              {currencies.map(c => <option key={c} value={c}>{c}</option>)}
-            </select>
+          
+          <Field label={`Amount in ${targetCurrency}`}>
+            <div className="row" style={{ gap: 8 }}>
+              <input
+                className="input"
+                type="number"
+                value={targetAmount}
+                onChange={e => handleTargetChange(e.target.value)}
+                style={{ flex: 1 }}
+              />
+              <select
+                className="select"
+                value={targetCurrency}
+                onChange={e => setTargetCurrency(e.target.value)}
+                disabled={currencies.length === 0}
+                style={{ flex: '0 0 100px' }}
+              >
+                {currencies.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
           </Field>
         </div>
       </Card>
@@ -181,26 +208,19 @@ export default function CurrencyConverter() {
       {loading && <Card className="mt-3"><p className="muted">Loading exchange rate…</p></Card>}
       {error && <Card className="mt-3"><p className="pill pill-danger">{error}</p></Card>}
 
-      {!loading && !error && convertedAmount !== null && rate !== null && (
+      {!loading && !error && rate !== null && (
         <Card className="mt-3">
-          <h3>Conversion</h3>
-          <div style={{ marginTop: 8 }}>
-            <div className="muted">You get</div>
-            <div style={{ fontSize: '2rem', fontWeight: 800 }} className="mono">
-              {convertedAmount.toLocaleString('en-IN', {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              })}{' '}
-              {targetCurrency}
+          <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <div className="muted" style={{ fontSize: '0.9rem' }}>
+                1 INR = {rate.toFixed(6)} {targetCurrency}
+                {lastUpdated && ` · Reference rate as of ${lastUpdated}`}
+              </div>
             </div>
-            <div className="muted" style={{ fontSize: '0.9rem', marginTop: 4 }}>
-              1 INR = {rate.toFixed(6)} {targetCurrency}
-              {lastUpdated && ` · Reference rate as of ${lastUpdated}`}
-            </div>
+            <Button variant="primary" onClick={saveToHistory}>
+              💾 Save to History
+            </Button>
           </div>
-          <Button variant="primary" className="mt-3" onClick={saveToHistory}>
-            💾 Save to History
-          </Button>
         </Card>
       )}
 
