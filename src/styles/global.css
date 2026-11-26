@@ -249,3 +249,60 @@ h3 { font-size: 1rem; font-weight: 700; }
   color: var(--text-muted);
 }
 .tabbar button.active { background: var(--bg-elevated); color: var(--text); box-shadow: var(--shadow-1); }
+
+/* Append to global.css */
+
+.partner-network-slot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-subtle);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+  margin: var(--space-4) auto;
+  overflow: hidden; /* Ensures video stays inside bounds */
+  position: relative;
+}
+
+.partner-network-slot.leaderboard {
+  width: 100%;
+  max-width: 970px;
+  min-height: 90px;
+  /* Force 16:9 ratio for video if needed, but 970x90 is standard */
+}
+
+.partner-network-slot.rectangle {
+  width: 100%;
+  max-width: 300px; 
+  min-height: 250px; /* Standard 300x250 medium rectangle */
+}
+
+@media (max-width: 767px) {
+  .partner-network-slot.leaderboard {
+    min-height: 50px;
+    max-width: 320px; 
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
+  .partner-network-slot.leaderboard {
+    min-height: 60px;
+    max-width: 468px;
+  }
+}
+
+.promo-zone-content {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.direct-sales-contact {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}

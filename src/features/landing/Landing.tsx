@@ -4,14 +4,14 @@ import { useI18n } from '../../i18n/I18nProvider';
 
 const TOOLS = [
   { path: '/tool/quick-split', label: 'Split Bill', icon: '⚡', desc: 'Split bills with friends' },
-  { path: '/tool/emi', label: 'EMI Calculator', icon: '🏦', desc: 'Home, car & personal loans' },
+  { path: '/tool/emi', label: 'EMI Calculator', icon: '🏡', desc: 'Home, car & personal loans' }, // Changed from 🏦 to 🏡 to remove dollar symbol
   { path: '/tool/gst', label: 'GST Calculator', icon: '🧾', desc: 'Inclusive & exclusive' },
   { path: '/tool/sip', label: 'SIP Calculator', icon: '📈', desc: 'Mutual fund returns' },
-  { path: '/tool/income-tax', label: 'Income Tax', icon: '📊', desc: 'Old vs new regime' },
+  { path: '/tool/income-tax', label: 'Income Tax', icon: '📊', desc: 'Resident & NRI tax' }, // Updated description
   { path: '/tool/nri-days', label: 'NRI Day Tracker', icon: '📅', desc: '182-day residency rule' },
-  { path: '/tool/currency', label: 'Currency Converter', icon: '💱', desc: 'INR to world' },
+  { path: '/tool/currency', label: 'Currency Converter', icon: '₹', desc: 'INR to world' }, // Changed from 💱 to ₹
   { path: '/tool/hra', label: 'HRA Calculator', icon: '🏠', desc: 'House rent allowance' },
-  { path: '/tool/tds', label: 'TDS Calculator', icon: '💸', desc: 'Tax deducted at source' },
+  { path: '/tool/tds', label: 'TDS Calculator', icon: '📑', desc: 'Tax deducted at source' }, // Changed from 💸 to 📑
 ];
 
 export default function Landing() {
@@ -75,6 +75,7 @@ export default function Landing() {
         .tool-button:hover {
           transform: translateY(-2px);
           box-shadow: var(--shadow-2);
+          text-decoration: none !important; /* Forces underline removal on hover */
         }
         @media (min-width: 768px) {
           .tool-grid {
