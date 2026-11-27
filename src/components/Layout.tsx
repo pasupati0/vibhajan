@@ -1,8 +1,11 @@
 // src/components/Layout.tsx
-import { NavLink, Outlet } from 'react-router-dom';
+import { NavLink, Outlet, Link, useLocation } from 'react-router-dom';
 import { useI18n } from '../i18n/I18nProvider';
 import { useTheme } from '../context/ThemeProvider';
 import { LANGS } from '../i18n/dict';
+import { AdSlot } from './AdSlot';
+
+// ... (Sidebar and TopBar remain exactly the same) ...
 
 function Sidebar() {
   const { t, lang, setLang } = useI18n();
@@ -21,7 +24,6 @@ function Sidebar() {
         </NavLink>
       </nav>
       
-      {/* Global Toggles at bottom of Sidebar */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingTop: 16, borderTop: '1px solid var(--border)' }}>
         <div className="field">
           <label style={{ fontSize: '0.75rem' }}>{t('common.language')}</label>
@@ -66,13 +68,71 @@ function TopBar() {
 }
 
 export function Layout() {
+  const location = useLocation();
+  const isHome = location.pathname === '/';
+
   return (
     <div className="app-shell">
       <Sidebar />
-      <main className="app-main">
-        <TopBar />
-        <Outlet />
-      </main>
+      
+      <div className="content-wrapper">
+        
+        <main className="app-main">
+          <TopBar />
+          
+          {/* UPDATED BACK BUTTON */}
+          {!isHome && (
+            <div style={{ marginBottom: 'var(--space-4)' }}>
+              <Link 
+                to="/" 
+                className="btn btn-ghost back-button" 
+                style={{ 
+                  display: 'inline-flex', 
+                  alignItems: 'center', 
+                  gap: '8px', 
+                  padding: '6px 16px 6px 12px',
+                  borderRadius: 'var(--radius-pill)',
+                  fontWeight: 500, // Thinner text
+                }}
+              >
+                <span aria-hidden style={{ fontSize: '1.2rem', lineHeight: 1, fontWeight: 400 }}>⬅</span>
+                <span style={{ fontSize: '0.95rem' }}>Back</span>
+              </Link>
+            </div>
+          )}
+
+          {/* TOP AD */}
+          <div style={{ marginBottom: 'var(--space-4)' }}>
+            <AdSlot variant="leaderboard" />
+          </div>
+
+          {/* The active page renders here */}
+          <Outlet />
+
+          {/* BOTTOM AD */}
+          <div style={{ marginTop: 'var(--space-6)', paddingBottom: 'var(--space-4)' }}>
+            <AdSlot variant="leaderboard" />
+          </div>
+        </main>
+
+        {/* RIGHT RAIL AD (Hidden on Mobile) */}
+        <aside className="right-rail">
+          <div className="right-rail-sticky">
+            <AdSlot variant="skyscraper" />
+          </div>
+        </aside>
+
+      </div>
+
+      {/* CSS specifically to remove the underline from the back button */}
+      <style>{`
+        .back-button {
+          text-decoration: none !important;
+        }
+        .back-button:hover {
+          text-decoration: none !important;
+        }
+      `}</style>
     </div>
   );
 }

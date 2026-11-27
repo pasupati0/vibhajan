@@ -2,9 +2,8 @@
 import React, { useRef, useState } from 'react';
 
 interface AdSlotProps {
-  variant?: 'leaderboard' | 'rectangle';
+  variant?: 'leaderboard' | 'rectangle' | 'skyscraper'; // <-- Added skyscraper
   className?: string;
-  // New props for video/image injection
   type?: 'placeholder' | 'video' | 'image';
   mediaSrc?: string;
   linkUrl?: string;
@@ -27,7 +26,6 @@ export function AdSlot({
     }
   };
 
-  // Wrapper to handle click-through if a link is provided
   const MediaWrapper = ({ children }: { children: React.ReactNode }) => {
     if (linkUrl) {
       return (
@@ -45,7 +43,7 @@ export function AdSlot({
         
         {type === 'placeholder' && (
           <div className="direct-sales-contact">
-            <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>
+            <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)', textAlign: 'center' }}>
               📢 Advertise to India's smartest financial planners.
             </span>
             <a 
@@ -53,7 +51,7 @@ export function AdSlot({
               className="btn btn-sm btn-ghost"
               style={{ marginTop: 8 }}
             >
-              Contact: pasupati@zohomail.in
+              Contact Us
             </a>
           </div>
         )}
@@ -83,10 +81,9 @@ export function AdSlot({
               />
             </MediaWrapper>
             
-            {/* Mute / Unmute Control */}
             <button
               onClick={(e) => {
-                e.preventDefault(); // Prevents triggering the linkUrl if inside an anchor
+                e.preventDefault();
                 toggleMute();
               }}
               style={{

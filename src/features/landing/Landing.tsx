@@ -1,32 +1,23 @@
 // src/features/landing/Landing.tsx
 import { Link } from 'react-router-dom';
-import { useI18n } from '../../i18n/I18nProvider';
 
 const TOOLS = [
   { path: '/tool/quick-split', label: 'Split Bill', icon: '⚡', desc: 'Split bills with friends' },
-  { path: '/tool/emi', label: 'EMI Calculator', icon: '🏡', desc: 'Home, car & personal loans' }, // Changed from 🏦 to 🏡 to remove dollar symbol
+  { path: '/tool/emi', label: 'EMI Calculator', icon: '🏡', desc: 'Home, car & personal loans' },
   { path: '/tool/gst', label: 'GST Calculator', icon: '🧾', desc: 'Inclusive & exclusive' },
   { path: '/tool/sip', label: 'SIP Calculator', icon: '📈', desc: 'Mutual fund returns' },
-  { path: '/tool/income-tax', label: 'Income Tax', icon: '📊', desc: 'Resident & NRI tax' }, // Updated description
+  { path: '/tool/income-tax', label: 'Income Tax', icon: '📊', desc: 'Resident & NRI tax' },
   { path: '/tool/nri-days', label: 'NRI Day Tracker', icon: '📅', desc: '182-day residency rule' },
-  { path: '/tool/currency', label: 'Currency Converter', icon: '₹', desc: 'INR to world' }, // Changed from 💱 to ₹
+  { path: '/tool/currency', label: 'Currency Converter', icon: '₹', desc: 'INR to world' },
   { path: '/tool/hra', label: 'HRA Calculator', icon: '🏠', desc: 'House rent allowance' },
-  { path: '/tool/tds', label: 'TDS Calculator', icon: '📑', desc: 'Tax deducted at source' }, // Changed from 💸 to 📑
+  { path: '/tool/tds', label: 'TDS Calculator', icon: '📑', desc: 'Tax deducted at source' },
 ];
 
 export default function Landing() {
-  const { t } = useI18n();
 
   return (
     <div className="fade-in">
-      <header style={{ marginBottom: 'var(--space-6)', textAlign: 'center' }}>
-        <h1 style={{ fontSize: 'clamp(2rem, 5vw, 3rem)', fontWeight: 800 }}>
-          {t('brand')}
-        </h1>
-        <p className="muted" style={{ fontSize: '1.1rem', maxWidth: '600px', margin: '8px auto' }}>
-          {t('landing.subtitle')}
-        </p>
-      </header>
+      {/* Branding header removed */}
 
       <div
         style={{
@@ -75,7 +66,7 @@ export default function Landing() {
         .tool-button:hover {
           transform: translateY(-2px);
           box-shadow: var(--shadow-2);
-          text-decoration: none !important; /* Forces underline removal on hover */
+          text-decoration: none !important;
         }
         @media (min-width: 768px) {
           .tool-grid {
