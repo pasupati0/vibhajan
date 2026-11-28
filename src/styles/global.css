@@ -342,3 +342,16 @@ h3 { font-size: 1rem; font-weight: 700; }
 [data-theme='dark'] .tool-button:hover {
   border-color: var(--brand-500) !important;
 }
+
+/* Fix for HRA Active Limb Contrast */
+.limb-active {
+  border-color: var(--brand-500) !important;
+  background-color: var(--brand-50) !important;
+  color: var(--brand-900) !important; /* Dark text for light mode */
+}
+
+[data-theme='dark'] .limb-active {
+  background-color: rgba(249, 115, 22, 0.15) !important; /* Dark translucent orange */
+  border-color: var(--brand-500) !important;
+  color: #FFFFFF !important; /* Force white text in dark mode */
+}

@@ -323,10 +323,15 @@ export default function IncomeTaxCalculator() {
       )}
 
       <div className="mt-4" style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-        <p><strong>Disclaimer:</strong> For informational purposes only. Based on Income-tax Act, 2025 (amended by Finance Act, 2026) for Tax Year 2026-27.</p>
-        {isNri && (
-          <p><strong>NRI Note:</strong> NRIs are <strong>not eligible</strong> for Section 156 rebate. The 120-day rule applies if Indian income {'>'} ₹15L. Deemed residency applies if not taxed abroad.</p>
-        )}
+        <p>
+          <strong>Disclaimer:</strong> This calculator provides an estimate based on the Income-tax Act, 2025 (amended by Finance Act, 2026) for Tax Year 2026-27. 
+          It is for informational purposes only and does not constitute professional tax advice. 
+          Actual tax liability may vary based on your specific income composition (e.g., capital gains, foreign assets, business income) and applicable deductions. 
+          Surcharge and Marginal Relief calculations can be complex. Always consult a qualified Chartered Accountant (CA) for precise tax planning and filing.
+        </p>
+        <p>
+          <strong>Note:</strong> Standard deduction is ₹75,000 for New Regime and ₹50,000 for Old Regime. Section 156 rebate is capped at ₹60,000 for New Regime and ₹12,500 for Old Regime. Marginal relief applies for incomes marginally exceeding the rebate thresholds. Surcharge is capped at 25% for New Regime.
+        </p>
       </div>
     </div>
   );

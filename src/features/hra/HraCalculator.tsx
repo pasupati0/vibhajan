@@ -272,9 +272,14 @@ export default function HraCalculator() {
       )}
 
       <div className="mt-4" style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-        <p><strong>Disclaimer:</strong> For informational purposes only. Consult a CA for precise tax planning.</p>
         <p>
-          <strong>Tax Year {TAX_YEAR} rules:</strong> Exemption under Section 11 read with Schedule III (Table Sl. No. 11) and Rule 279 of the Income-tax Act, 2025. Salary for HRA = Basic + DA (retirement-linked) + turnover commission. Rent receipts required; landlord PAN mandatory if annual rent exceeds ₹1,00,000. If your salary or rent changed mid-year, calculate each period separately.
+          <strong>Disclaimer:</strong> This calculator provides an estimate based on the Income-tax Act, 2025 for Tax Year {TAX_YEAR}. 
+          It is for informational purposes only and does not constitute professional tax advice. 
+          Actual exemption may vary based on your specific salary structure and rent payments. 
+          Always consult a qualified Chartered Accountant (CA) for precise tax planning.
+        </p>
+        <p>
+          <strong>Rules:</strong> Exemption under Section 11 read with Schedule III (Table Sl. No. 11) and Rule 279. Salary for HRA = Basic + DA (retirement-linked) + turnover commission. Rent receipts required; landlord PAN mandatory if annual rent exceeds ₹1,00,000. If your salary or rent changed mid-year, calculate each period separately.
         </p>
       </div>
     </div>
@@ -289,13 +294,33 @@ function LimbRow({ label, value, active }: { label: string; value: string; activ
         padding: '10px 14px',
         borderColor: active ? 'var(--brand-500)' : undefined,
         background: active ? 'var(--brand-50)' : undefined,
+        color: active ? 'var(--brand-900)' : 'inherit', 
       }}
     >
-      <span style={{ fontSize: '0.9rem', fontWeight: active ? 700 : 400 }}>{label}</span>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <span style={{ fontSize: '0.9rem', fontWeight: active ? 700 : 400 }}>{label}</span>
+        
+        {/* Replaced the class with explicit inline styles to guarantee contrast */}
+        {active && (
+          <span 
+            style={{ 
+              fontSize: '0.7rem', 
+              padding: '2px 8px', 
+              borderRadius: '999px', 
+              fontWeight: 700,
+              backgroundColor: 'var(--brand-200)', /* Light orange */
+              color: 'var(--brand-900)', /* Dark brown text */
+              display: 'inline-flex',
+              alignItems: 'center'
+            }}
+          >
+            Lowest
+          </span>
+        )}
+      </div>
       <span className="mono" style={{ fontWeight: active ? 700 : 600 }}>
         {value}
       </span>
-      {active && <span className="pill pill-brand" style={{ fontSize: '0.7rem' }}>Lowest</span>}
     </div>
   );
 }
